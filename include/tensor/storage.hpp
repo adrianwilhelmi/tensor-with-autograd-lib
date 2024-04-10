@@ -16,73 +16,154 @@ public:
 	using iterator = StorageIterator<T>;
 	using const_iterator = StorageIterator<const T>;
 
-	iterator begin() {return iterator(data);}
-	iterator end() {return iterator(data + size);}
+	iterator begin() {return iterator(data_);}
+	iterator end() {return iterator(data_ + size_);}
 
-	const_iterator begin() const {return const_iterator(data);}
-	const_iterator end() const {return const_iterator(data + size);}
+	const_iterator begin() const {return const_iterator(data_);}
+	const_iterator end() const {return const_iterator(data_ + size_);}
 
 	explicit Storage(std::size_t n) 
-		: size(n), observers(new unsigned int(1)){
-		data = new T[n];
+		: size_(n), observers_(new unsigned int(1)){
+		data_ = new T[n];
 	}
 
 	~Storage(){
 		decrement_observers();
 	}
 
-	Storage(const Storage& other) 
-		: size(other.size), data(new T[other.size]), 
-		observers(new unsigned int(1)){
-		std::copy(other.data, other.data + size, this->data);
+	Storage(const Storage& other, bool share = 0){
+		if(share){
+			this->shared_copy(other);
+		}
+		else{
+			this->deep_copy(other);
+		}
 	}
 
 	Storage&operator=(const Storage&other){
 		if(this != &other){
 			decrement_observers();
+			this->deep_copy(other);
+		}
+		return*this;
+	}
 
-			this->size = other.size;
-			this->data = other.data;
-			this->observers = other.observers;
-			++(*this->observers);
+	Storage(Storage&&other) noexcept 
+		: data_(other.data_), size_(other.size_), 
+		observers_(other.observers_){
+		other.data_ = nullptr;
+		other.observers_ = nullptr;
+		other.size_ = 0;
+	}
+
+	Storage&operator=(Storage&&other) noexcept{
+		if(this != &other){
+			decrement_observers();
+
+			this->data_ = other.data_;
+			this->size_ = other.size_;
+			this->observers_ = other.observers_;
+
+			other.data_ = nullptr;
+			other.observers_ = nullptr;
+			other.size_ = 0;
 		}
 		return*this;
 	}
 
 	Storage(std::initializer_list<T> list)
-		: data(new T[list.size()]), size(list.size()),
-	       	observers(new unsigned int(1)){
-		std::copy(list.begin(), list.end(), data);
+		: data_(new T[list.size()]), size_(list.size()),
+	       	observers_(new unsigned int(1)){
+		std::copy(list.begin(), list.end(), this->begin());
+	}
+
+	void share(Storage&sharee){
+		sharee.decrement_observers();
+		sharee.shared_copy(*this);
 	}
 
 	T&operator[](std::size_t i){
-		return data[i];
+		return data_[i];
 	}
 
 	const T&operator[](std::size_t i) const{
-		return data[i];
+		return data_[i];
 	}
 
 	std::size_t size(){
-		return this->size;
+		return this->size_;
 	}
 
 	T*data(){
-		return this->data;
+		return this->data_;
 	}
 
 private:
-	T*data;
+	T*data_;
 	std::size_t size;
-	unsigned int*observers;
+	unsigned int*observers_;
 
 	void decrement_observers(){
-		--(*observers);
-		if(*observers == 0){
-			delete[] data;
-			delete observers;
+		--(*observers_);
+		if(*observers_ == 0){
+			delete[] data_;
+			delete observers_;
 		}
 	}
+
+	void deep_copy(const Storage&other){
+		this->size_ = other.size_;
+		if(size_ > 0){
+			this->data_ = new T[this->size_];
+			std::copy(other.begin(), other.end(), this->begin());
+		}
+		else{
+			data_ = nullptr;
+		}
+		this->observers_ = new unsigned int(1);
+	}
+
+	void shared_copy(const Storage&other){
+		this->data_ = other.data_;
+		this->size_ = other.size_;
+		this->observers_ = other.observers_;
+		++(*observers_);
+	}
+};
+
+template<typename T, typename U>
+bool same_storage(Storage<T> a, Storage<U> b){
+	//assert(same type a, b)
+	return a.data() == b.data();
+}
+
+template<typename T, typename U>
+inline bool operator==(const Storage<T> a, const Storage<U> b){
+	//assert T == U
+	if(a.size() == b.size(){
+		auto ait = a.begin();
+		for(auto bit = b.begin(); bit != b.end(); ++bit){
+			if(*ait != *bit){
+				return false;
+			}
+		}
+	}
+	return false;
+}
+
+template<typename T, typename U>
+inline bool operator!=(const Storage<T> a, const Storage<U>b){
+	//assert T == U
+	return !(a == b);
+}
+
+template<typename T>
+std::ostream&operator<<(std::ostream&os, const Storage<T>s){
+	for(auto it = s.begin(), it != s.end(); ++it){
+		std::cout << std::setw(3) << std::setfill('O') << *it << " ";
+	}
+	return os;
+}
 
 template<typename T>
 class StorageIterator{
@@ -104,7 +185,7 @@ public:
 		++(*this);
 		return temp;
 	}
-	StorageIterator&operator--() {ptr++; return*this;}
+	StorageIterator&operator--() {ptr--; return*this;}
 	StorageIterator operator--(int) {
 		StorageIterator temp = *this; 
 		--(*this);
@@ -137,4 +218,4 @@ private:
 	pointer ptr;
 };
 
-#endif
+#endif //STORAGE_HPP_

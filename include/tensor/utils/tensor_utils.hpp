@@ -13,7 +13,8 @@
 
 namespace tensor_impl{
 	inline std::size_t compute_strides(const std::size_t d,
-			const std::size_t*exts,	std::size_t*strs){
+			const Storage<std::size_t>exts,	
+			Storage<std::size_t>strs){
 		std::size_t st = 1;
 		for(long long i = d - 1; i >= 0; --i){
 			strs[i] = st;
@@ -23,11 +24,10 @@ namespace tensor_impl{
 	}
 	
 	inline std::size_t compute_size(std::size_t dims, 
-			std::size_t*exts){
-		return std::accumulate(exts, exts + dims, 1,
+			Storage<std::size_t>&exts){
+		return std::accumulate(exts.begin(), exts.end(), 1,
 				std::multiplies<std::size_t>{});
 	}
-};
+}; //namespace tensor_impl
 
-#endif
-
+#endif //TENSOR_UTILS_HPP_
