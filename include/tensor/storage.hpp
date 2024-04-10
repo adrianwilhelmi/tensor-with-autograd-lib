@@ -3,6 +3,9 @@
 
 #include<algorithm>
 #include<cstddef>
+#include<ostream>
+#include<iostream>
+#include<iomanip>
 
 template<typename T>
 class StorageIterator;
@@ -100,7 +103,7 @@ public:
 
 private:
 	T*data_;
-	std::size_t size;
+	std::size_t size_;
 	unsigned int*observers_;
 
 	void decrement_observers(){
@@ -140,7 +143,7 @@ bool same_storage(Storage<T> a, Storage<U> b){
 template<typename T, typename U>
 inline bool operator==(const Storage<T> a, const Storage<U> b){
 	//assert T == U
-	if(a.size() == b.size(){
+	if(a.size() == b.size()){
 		auto ait = a.begin();
 		for(auto bit = b.begin(); bit != b.end(); ++bit){
 			if(*ait != *bit){
@@ -159,7 +162,7 @@ inline bool operator!=(const Storage<T> a, const Storage<U>b){
 
 template<typename T>
 std::ostream&operator<<(std::ostream&os, const Storage<T>s){
-	for(auto it = s.begin(), it != s.end(); ++it){
+	for(auto it = s.begin(); it != s.end(); ++it){
 		std::cout << std::setw(3) << std::setfill('O') << *it << " ";
 	}
 	return os;
@@ -201,12 +204,12 @@ public:
 	StorageIterator operator+=(difference_type n) {ptr += n; return*this;}
 	StorageIterator operator-=(difference_type n) {ptr -= n; return*this;}
 
-	bool operator==(const StorageIterator&other) const {return ptr == other.ptr}
-	bool operator!=(const StorageIterator&other) const {return ptr != other.ptr}
-	bool operator<(const StorageIterator&other) const {return ptr < other.ptr}
-	bool operator>(const StorageIterator&other) const {return ptr > other.ptr}
-	bool operator<=(const StorageIterator&other) const {return ptr <= other.ptr}
-	bool operator>=(const StorageIterator&other) const {return ptr >= other.ptr}
+	bool operator==(const StorageIterator&other) const {return ptr == other.ptr;}
+	bool operator!=(const StorageIterator&other) const {return ptr != other.ptr;}
+	bool operator<(const StorageIterator&other) const {return ptr < other.ptr;}
+	bool operator>(const StorageIterator&other) const {return ptr > other.ptr;}
+	bool operator<=(const StorageIterator&other) const {return ptr <= other.ptr;}
+	bool operator>=(const StorageIterator&other) const {return ptr >= other.ptr;}
 
 	reference operator[](difference_type n) const {return *(ptr + n);}
 
