@@ -1,6 +1,7 @@
 #ifndef STORAGE_HPP_
 #define STORAGE_HPP_
 
+#include<cassert>
 #include<algorithm>
 #include<cstddef>
 #include<ostream>
@@ -25,6 +26,13 @@ public:
 	const_iterator begin() const {return const_iterator(data_);}
 	const_iterator end() const {return const_iterator(data_ + size_);}
 
+	Storage(){
+		this->size_ = 0;
+		this->data_ = nullptr;
+		//this->observers_ = new unsigned int(1);
+		this->observers_ = nullptr;
+	}
+
 	explicit Storage(std::size_t n) 
 		: size_(n), observers_(new unsigned int(1)){
 		data_ = new T[n];
@@ -34,13 +42,8 @@ public:
 		decrement_observers();
 	}
 
-	Storage(const Storage& other, bool share = 0){
-		if(share){
-			this->shared_copy(other);
-		}
-		else{
-			this->deep_copy(other);
-		}
+	Storage(const Storage& other){
+		this->deep_copy(other);
 	}
 
 	Storage&operator=(const Storage&other){
@@ -81,7 +84,9 @@ public:
 	}
 
 	void share(Storage&sharee){
-		sharee.decrement_observers();
+		if(this != &sharee){
+			sharee.decrement_observers();
+		}
 		sharee.shared_copy(*this);
 	}
 
@@ -101,16 +106,26 @@ public:
 		return this->data_;
 	}
 
+	unsigned int observers(){
+		return *this->observers_;
+	}
+
 private:
 	T*data_;
 	std::size_t size_;
 	unsigned int*observers_;
 
 	void decrement_observers(){
-		--(*observers_);
-		if(*observers_ == 0){
-			delete[] data_;
-			delete observers_;
+		if(observers_){
+			--(*this->observers_);
+			if(*this->observers_ == 0){
+				if(data_){
+					delete[] data_;
+					data_ = nullptr;
+				}
+				delete observers_;
+				observers_ = nullptr;
+			}
 		}
 	}
 
@@ -130,28 +145,30 @@ private:
 		this->data_ = other.data_;
 		this->size_ = other.size_;
 		this->observers_ = other.observers_;
-		++(*observers_);
+		++(*this->observers_);
+		assert(this->data_ == other.data_);
 	}
 };
 
-template<typename T, typename U>
-bool same_storage(Storage<T> a, Storage<U> b){
+template<typename T>
+bool same_storage(Storage<T>&a, Storage<T>&b){
 	//assert(same type a, b)
 	return a.data() == b.data();
 }
 
 template<typename T, typename U>
-inline bool operator==(const Storage<T> a, const Storage<U> b){
+inline bool operator==(const Storage<T>&a, const Storage<U>&b){
 	//assert T == U
-	if(a.size() == b.size()){
+	//if(a.size() == b.size()){
 		auto ait = a.begin();
 		for(auto bit = b.begin(); bit != b.end(); ++bit){
 			if(*ait != *bit){
 				return false;
 			}
+			++ait;
 		}
-	}
-	return false;
+	//}
+	return true;
 }
 
 template<typename T, typename U>
@@ -163,7 +180,7 @@ inline bool operator!=(const Storage<T> a, const Storage<U>b){
 template<typename T>
 std::ostream&operator<<(std::ostream&os, const Storage<T>s){
 	for(auto it = s.begin(); it != s.end(); ++it){
-		std::cout << std::setw(3) << std::setfill('O') << *it << " ";
+		std::cout << std::setfill('O') << *it << " ";
 	}
 	return os;
 }

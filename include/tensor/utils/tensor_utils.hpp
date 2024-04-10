@@ -6,16 +6,13 @@
 #include<initializer_list>
 #include<cmath>
 
-#include"tensor_declarations.hpp"
-
 #include"tensor_slice.hpp"
 
-
 namespace tensor_impl{
-	inline std::size_t compute_strides(const std::size_t d,
-			const Storage<std::size_t>exts,	
+	inline std::size_t compute_strides(Storage<std::size_t>exts,	
 			Storage<std::size_t>strs){
 		std::size_t st = 1;
+		std::size_t d = exts.size();
 		for(long long i = d - 1; i >= 0; --i){
 			strs[i] = st;
 			st *= exts[i];
@@ -23,8 +20,7 @@ namespace tensor_impl{
 		return st;
 	}
 	
-	inline std::size_t compute_size(std::size_t dims, 
-			Storage<std::size_t>&exts){
+	inline std::size_t compute_size(Storage<std::size_t>&exts){
 		return std::accumulate(exts.begin(), exts.end(), 1,
 				std::multiplies<std::size_t>{});
 	}

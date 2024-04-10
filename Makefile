@@ -20,9 +20,14 @@ $(EXEC): $(OBJ)
 	@./$(EXEC)
 	@rm -f $(OBJ) $(EXEC)
 
-test: $(TEST_OBJ) $(OBJ)
-	@$(CXX) $(TEST_OBJ) $(filter-out -src/main.o, $(OBJ)) -o $(TEST_EXEC) $(TEST_LDLIBS)
+test: $(TEST_OBJ)
+	@$(CXX) $(TEST_OBJ) -o $(TEST_EXEC) $(TEST_LDLIBS)
 	@./$(TEST_EXEC)
+	@make clean
+
+atest: $(TEST_OBJ) $(OBJ)
+	@$(CXX) $(TEST_OBJ) $(filter-out -src/main.o, $(OBJ)) -o $(TEST_EXEC) $(TEST_LDLIBS)
+	@valgrind --leak-check=full ./$(TEST_EXEC)
 	@make clean
 
 analysis: $(OBJ)
