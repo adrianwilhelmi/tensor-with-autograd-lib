@@ -86,6 +86,15 @@ TEST(StorageTest, MoveConstructor){
 	EXPECT_EQ(og.size(), 0);
 }
 
+TEST(StorageTest, Iterator){
+	Storage<int> og = {3, 4, 12, 1, 0, 44};
+	std::sort(og.begin(), og.end());
+
+	EXPECT_EQ(og[0], 0);
+	EXPECT_EQ(og[1], 1);
+	EXPECT_EQ(og[2], 3);
+}
+
 int main(int argc, char**argv){
 	::testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();

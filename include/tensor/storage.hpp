@@ -29,8 +29,8 @@ public:
 	Storage(){
 		this->size_ = 0;
 		this->data_ = nullptr;
-		//this->observers_ = new unsigned int(1);
-		this->observers_ = nullptr;
+		this->observers_ = new unsigned int(1);
+		//this->observers_ = nullptr;
 	}
 
 	explicit Storage(std::size_t n) 
@@ -116,16 +116,14 @@ private:
 	unsigned int*observers_;
 
 	void decrement_observers(){
-		if(observers_){
-			--(*this->observers_);
-			if(*this->observers_ == 0){
-				if(data_){
-					delete[] data_;
-					data_ = nullptr;
-				}
-				delete observers_;
-				observers_ = nullptr;
+		--(*this->observers_);
+		if(*this->observers_ == 0){
+			if(data_){
+				delete[] data_;
+				data_ = nullptr;
 			}
+			delete observers_;
+			observers_ = nullptr;
 		}
 	}
 
@@ -180,7 +178,7 @@ inline bool operator!=(const Storage<T> a, const Storage<U>b){
 template<typename T>
 std::ostream&operator<<(std::ostream&os, const Storage<T>s){
 	for(auto it = s.begin(); it != s.end(); ++it){
-		std::cout << std::setfill('O') << *it << " ";
+		os << std::setfill('O') << *it << " ";
 	}
 	return os;
 }
