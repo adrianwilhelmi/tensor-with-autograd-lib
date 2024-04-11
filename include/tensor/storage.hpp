@@ -7,6 +7,8 @@
 #include<ostream>
 #include<iostream>
 #include<iomanip>
+#include<array>
+#include<vector>
 
 template<typename T>
 class StorageIterator;
@@ -116,14 +118,16 @@ private:
 	unsigned int*observers_;
 
 	void decrement_observers(){
-		--(*this->observers_);
-		if(*this->observers_ == 0){
-			if(data_){
-				delete[] data_;
-				data_ = nullptr;
+		if(this->observers_){
+			--(*this->observers_);
+			if(*this->observers_ == 0){
+				if(data_){
+					delete[] data_;
+					data_ = nullptr;
+				}
+				delete observers_;
+				observers_ = nullptr;
 			}
-			delete observers_;
-			observers_ = nullptr;
 		}
 	}
 
@@ -147,13 +151,6 @@ private:
 		assert(this->data_ == other.data_);
 	}
 };
-
-template<typename T>
-bool same_storage(Storage<T>&a, Storage<T>&b){
-	//assert(same type a, b)
-	return a.data() == b.data();
-}
-
 template<typename T, typename U>
 inline bool operator==(const Storage<T>&a, const Storage<U>&b){
 	//assert T == U
@@ -182,6 +179,42 @@ std::ostream&operator<<(std::ostream&os, const Storage<T>s){
 	}
 	return os;
 }
+
+namespace storage{
+	template<typename T>
+	bool same_storage(Storage<T>&a, Storage<T>&b){
+		//assert(same type a, b)
+		return a.data() == b.data();
+	}
+
+	template<typename T, std::size_t N>
+	Storage<T> from_array(std::array<T,N>&arr){
+		Storage<T> res(N);
+		std::copy(arr.begin(), arr.end(), res.begin());
+		return res;
+	}
+
+	template<typename T>
+	Storage<T> from_vector(std::vector<T>&v){
+		Storage<T> res(v.size());
+		std::copy(v.begin(), v.end(), res.begin());
+		return res;
+	}
+
+	template<typename T, std::size_t N>
+	std::array<T,N> to_array(Storage<T>&s){
+		std::array<T,N> arr;
+		std::copy(s.begin(), s.end(), arr.begin());
+		return arr;
+	}
+
+	template<typename T>
+	std::vector<T> to_vector(Storage<T>&s){
+		std::vector<T> vec(s.size());
+		std::copy(s.begin(), s.end(), vec.begin());
+		return vec;
+	}
+}; //namespace storage
 
 template<typename T>
 class StorageIterator{

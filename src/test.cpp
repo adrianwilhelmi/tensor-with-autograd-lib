@@ -12,13 +12,13 @@ int main(){
 	std::cout << copy << std::endl;
 
 	std::cout << "s == copy "<< (s == copy) << std::endl;
-	std::cout << "same storage " << same_storage(s, copy) << std::endl;
+	std::cout << "same storage " << storage::same_storage(s, copy) << std::endl;
 
 	Storage<int> sharee;
 	s.share(sharee);
 
 	std::cout << "s == sharee "<< (s == sharee) << std::endl;
-	std::cout << "same storage " << same_storage(s, sharee) << std::endl;
+	std::cout << "same storage " << storage::same_storage(s, sharee) << std::endl;
 
 	std::cout << "observers of init storage = " <<
 		s.observers() << std::endl;
@@ -28,7 +28,7 @@ int main(){
 		s.share(sharee3);
 
 		std::cout << "s == sharee3 "<< (s == sharee3) << std::endl;
-		std::cout << "same storage3 " << same_storage(s, sharee3) << std::endl;
+		std::cout << "same storage3 " << storage::same_storage(s, sharee3) << std::endl;
 
 		std::cout << "observers of init storage = " <<
 			s.observers() << std::endl;

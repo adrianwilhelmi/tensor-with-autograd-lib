@@ -70,7 +70,7 @@ TEST(StorageTest, ShareConstructor){
 	og[2] = 2;
 
 	ASSERT_EQ(og == sharee, true);
-	ASSERT_EQ(same_storage(og, sharee), true);
+	ASSERT_EQ(storage::same_storage(og, sharee), true);
 }
 */
 
@@ -94,6 +94,55 @@ TEST(StorageTest, Iterator){
 	EXPECT_EQ(og[1], 1);
 	EXPECT_EQ(og[2], 3);
 }
+
+TEST(StorageTest, FromArray){
+	std::array<int,4> arr = {7, 2, 5, 4};
+	Storage<int> s = storage::from_array(arr);
+
+	ASSERT_EQ(s.size(), arr.size());
+	auto sit = s.begin();
+	for(auto ait = arr.begin(); ait != arr.end(); ++ait){
+		EXPECT_EQ(*sit, *ait);
+		++sit;
+	}
+}
+
+TEST(StorageTest, FromVector){
+	std::vector<int> vec = {7, 2, 5, 4};
+	Storage<int> s = storage::from_vector(vec);
+
+	ASSERT_EQ(s.size(), vec.size());
+	auto sit = s.begin();
+	for(auto ait = vec.begin(); ait != vec.end(); ++ait){
+		EXPECT_EQ(*sit, *ait);
+		++sit;
+	}
+}
+
+TEST(StorageTest, ToArray){
+	Storage<int> s = {1, 4, 4, 7};
+	std::array<int, 4> arr = storage::to_array<int,4>(s);
+
+	ASSERT_EQ(s.size(), arr.size());
+	auto sit = s.begin();
+	for(auto ait = arr.begin(); ait != arr.end(); ++ait){
+		EXPECT_EQ(*sit, *ait);
+		++sit;
+	}
+}
+
+TEST(StorageTest, ToVector){
+	Storage<int> s = {1, 4, 4, 7};
+	std::vector<int> vec = storage::to_vector<int>(s);
+
+	ASSERT_EQ(s.size(), vec.size());
+	auto sit = s.begin();
+	for(auto ait = vec.begin(); ait != vec.end(); ++ait){
+		EXPECT_EQ(*sit, *ait);
+		++sit;
+	}
+}
+
 
 int main(int argc, char**argv){
 	::testing::InitGoogleTest(&argc, argv);

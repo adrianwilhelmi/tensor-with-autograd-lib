@@ -25,8 +25,8 @@ test: $(TEST_OBJ)
 	@./$(TEST_EXEC)
 	@make clean
 
-atest: $(TEST_OBJ) $(OBJ)
-	@$(CXX) $(TEST_OBJ) $(filter-out -src/main.o, $(OBJ)) -o $(TEST_EXEC) $(TEST_LDLIBS)
+atest: $(TEST_OBJ)
+	@$(CXX) $(TEST_OBJ) -o $(TEST_EXEC) $(TEST_LDLIBS)
 	@valgrind --leak-check=full ./$(TEST_EXEC)
 	@make clean
 
