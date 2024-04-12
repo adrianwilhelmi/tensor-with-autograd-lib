@@ -1,14 +1,19 @@
 #ifndef TENSOR_UTILS_HPP_
 #define TENSOR_UTILS_HPP_
 
+#include"../traits.hpp"
+#include"../declarations.hpp"
+#include"tensor_slice.hpp"
+#include"../storage.hpp"
+
 #include<cstddef>
 #include<algorithm>
 #include<initializer_list>
 #include<cmath>
-
-#include"tensor_slice.hpp"
+#include<numeric>
 
 namespace tensor_impl{
+
 	inline std::size_t compute_strides(Storage<std::size_t>exts,	
 			Storage<std::size_t>strs){
 		std::size_t st = 1;

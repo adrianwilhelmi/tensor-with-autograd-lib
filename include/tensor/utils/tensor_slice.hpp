@@ -1,6 +1,12 @@
 #ifndef TENSOR_SLICE_HPP_
 #define TENSOR_SLICE_HPP_
 
+#include"../storage.hpp"
+#include"../declarations.hpp"
+#include"../traits.hpp"
+#include"tensor_utils.hpp"
+
+
 #include<array>
 #include<numeric>
 #include<type_traits>
@@ -9,8 +15,6 @@
 #include<algorithm>
 #include<iostream>
 
-#include"tensor_utils.hpp"
-#include"../storage.hpp"
 
 struct tensor_slice{
 	tensor_slice();

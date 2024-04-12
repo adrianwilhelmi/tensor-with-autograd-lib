@@ -1,3 +1,6 @@
+#ifndef STORAGE_TEST_CPP_
+#define STORAGE_TEST_CPP_
+
 #include"../include/tensor/storage.hpp"
 
 #include<gtest/gtest.h>
@@ -33,24 +36,14 @@ TEST(StorageTest, CopyConstructor){
 	}
 }
 
-/*
 TEST(StorageTest, ShareConstructor2){
 	Storage<int> og = {4,2,1};
-	//Storage<int> sharee(og, true);
+	Storage<int> sharee;
+	og.share(sharee);
 
-	if(true){
-		Storage<int> sharee;
-		og.share(sharee);
+	ASSERT_EQ(og.size(), sharee.size());
 
-		ASSERT_EQ(og.size(), sharee.size());
-
-		sharee[2] = 2;
-
-		ASSERT_EQ(og.observers(), 2);
-	}
-
-	ASSERT_EQ(og[2], 2);
-	ASSERT_EQ(og.observers(), 1);
+	ASSERT_EQ(og.observers(), 2);
 }
 
 TEST(StorageTest, ShareConstructor){
@@ -72,7 +65,19 @@ TEST(StorageTest, ShareConstructor){
 	ASSERT_EQ(og == sharee, true);
 	ASSERT_EQ(storage::same_storage(og, sharee), true);
 }
-*/
+
+TEST(StorageTest, ShareConstructor3){
+	Storage<int> og = {4,2,1};
+	if(true){
+		Storage<int> sharee;
+		og.share(sharee);
+
+		ASSERT_EQ(og.size(), sharee.size());
+		ASSERT_EQ(og.observers(), 2);
+	}
+	ASSERT_EQ(og.observers(), 1);
+
+}
 
 TEST(StorageTest, MoveConstructor){
 	Storage<int> og = {4, 2, 1};
@@ -149,3 +154,4 @@ int main(int argc, char**argv){
 	return RUN_ALL_TESTS();
 }
 
+#endif //STORAGE_TEST_CPP_
