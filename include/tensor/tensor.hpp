@@ -8,7 +8,7 @@
 #include"utils/tensor_slice.hpp"
 #include"utils/tensor_utils.hpp"
 
-template<typename T>
+template<typename T, std::size_t N>
 class Tensor{
 public:
 	Tensor() = default;
@@ -18,13 +18,13 @@ public:
 	Tensor&operator=(const Tensor&&) = default;
 	~Tensor() = default;
 
-	Tensor(tensor_slice d, Storage<T> s) : desc_(d), elems_(s) {}
+	Tensor(TensorSlice<N> d, Storage<T> s) : desc_(d), elems_(s) {}
 
 	template<typename U>
-	Tensor(const Tensor<U>&x);
+	Tensor(const Tensor<U,N>&x);
 
 	template<typename U>
-	Tensor&operator=(const Tensor<U>&x);
+	Tensor&operator=(const Tensor<U,N>&x);
 
 	template<typename... Exts>
 	explicit Tensor(Exts... exts);
@@ -37,49 +37,30 @@ public:
 	template<typename U>
 	Tensor& operator=(std::initializer_list<U>) = delete;
 
-	tensor_slice descriptor(){
+	TensorSlice<N> descriptor(){
 		return this->desc_;
-	}
-private:
-	template<typename U>
-	void initialize(const std::initializer_list<U>&list, 
-			std::vector<T>&temp, bool is_outer = false){
-		for(const auto&elem : list){
-			if constexpr(std::is_same<U,T>::value){
-				temp.add(elem);
-			}
-			else{
-				initialize(elem, temp, false);
-			}
-		}
-		if(is_outer){
-			//desc_ extents add (list.size())
-		}
-		if constexpr(std::is_same<U,T>::value){
-			elems_ = storage::from_vector(temp);
-		}
 	}
 
 private:
-	tensor_slice desc_;
+	TensorSlice<N> desc_;
 	Storage<T> elems_;
 	Storage<T> grads_;
 
 	bool req_grad_;
 };
 
-template<typename T>
+template<typename T, std::size_t N>
 template<typename U>
-Tensor<T>::Tensor(const Tensor<U>&x)
+Tensor<T,N>::Tensor(const Tensor<U,N>&x)
 	: req_grad_(false){
 	static_assert(Convertible<U,T>(), "inconsistent types");
 	this->desc_ = x.desc_;
 	std::copy(x.begin(), x.end(), this->begin());
 }
 
-template<typename T>
+template<typename T, std::size_t N>
 template<typename U>
-Tensor<T>& Tensor<T>::operator=(const Tensor<U>&x){
+Tensor<T,N>& Tensor<T,N>::operator=(const Tensor<U,N>&x){
 	static_assert(Convertible<U,T>(), "inconsistent types");
 	this->req_grad_ = false;
 	this->desc_ = x.desc_;
@@ -88,9 +69,9 @@ Tensor<T>& Tensor<T>::operator=(const Tensor<U>&x){
 	return*this;
 }
 
-template<typename T>
+template<typename T, std::size_t N>
 template<typename... Exts>
-Tensor<T>::Tensor(Exts... exts)
+Tensor<T,N>::Tensor(Exts... exts)
 	: desc_{exts...},
 	elems_(desc_.size),
 	grads_(),
