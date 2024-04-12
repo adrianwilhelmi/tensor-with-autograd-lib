@@ -5,7 +5,6 @@
 #include"../traits.hpp"
 #include"tensor_utils.hpp"
 
-
 #include<array>
 #include<numeric>
 #include<type_traits>

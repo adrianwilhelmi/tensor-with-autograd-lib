@@ -3,8 +3,8 @@
 
 #include"declarations.hpp"
 
-#include"storage.hpp"
 #include"traits.hpp"
+#include"storage.hpp"
 #include"utils/tensor_slice.hpp"
 #include"utils/tensor_utils.hpp"
 
@@ -64,8 +64,7 @@ Tensor<T,N>& Tensor<T,N>::operator=(const Tensor<U,N>&x){
 	static_assert(Convertible<U,T>(), "inconsistent types");
 	this->req_grad_ = false;
 	this->desc_ = x.desc_;
-	this->elems_(desc_.size);
-	this->elems_ = x.elems_;
+	x.elems_.share(this->elems_);
 	return*this;
 }
 
