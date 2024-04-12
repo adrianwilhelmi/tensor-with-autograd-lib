@@ -95,9 +95,9 @@ public:
 		return this->size_;
 	}
 
-	T*data(){
-		return this->data_.get();
-	}
+	T*data(){return this->data_.get();}
+
+	const T*data() const {return this->data_.get();}
 
 	unsigned int observers() const{
 		return data_.use_count();
@@ -165,7 +165,7 @@ namespace storage{
 	template<typename T>
 	Storage<T> from_vector(std::vector<T>&v){
 		Storage<T> res(v.size());
-		std::copy(v.begin(), v.end(), res.begin());
+		std::move(v.begin(), v.end(), res.begin());
 		return res;
 	}
 
@@ -202,12 +202,14 @@ public:
 	StorageIterator operator++(int) {
 		StorageIterator temp = *this; 
 		++(*this);
+		//++(*temp);
 		return temp;
 	}
 	StorageIterator&operator--() {--ptr; return*this;}
 	StorageIterator operator--(int) {
 		StorageIterator temp = *this; 
 		--(*this);
+		//--(*temp);
 		return temp;
 	}
 
