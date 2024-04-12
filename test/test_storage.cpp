@@ -2,6 +2,8 @@
 #define STORAGE_TEST_CPP_
 
 #include"../include/tensor/storage.hpp"
+//#include"../include/tensor/traits.hpp"
+//#include"tensor_lib.hpp"
 
 #include<gtest/gtest.h>
 

@@ -11,24 +11,23 @@
 #include"../traits.hpp"
 #include"tensor_slice.hpp"
 
-
 namespace tensor_impl{
 	template<std::size_t N, typename List>
 	inline bool check_non_jagged(const List& list);
 
 	template<typename T, std::size_t N>
-	struct Tensor_init{
-		using type = std::initializer_list<typename Tensor_init<T, N-1>::type>;
+	struct TensorInit{
+		using type = std::initializer_list<typename TensorInit<T, N-1>::type>;
 	};
 
 	template<typename T>
-	struct Tensor_init<T,1>{
+	struct TensorInit<T,1>{
 		using type = std::initializer_list<T>;
 	};
 
 	//n == 0 -> err
 	template<typename T>
-	struct Tensor_init<T,0>;
+	struct TensorInit<T,0>;
 		
 	template<std::size_t N, typename I, typename T>
 	Enable_if<(N == 1), void> add_extents(I& first,
@@ -147,6 +146,6 @@ namespace tensor_impl{
 }; //namespace tensor_impl
 
 template<typename T, std::size_t N>
-using Tensor_initializer = typename tensor_impl::Tensor_init<T,N>::type;
+using TensorInitializer = typename tensor_impl::TensorInit<T,N>::type;
 
 #endif //TENSOR_UTILS_HPP_

@@ -4,7 +4,6 @@
 #include<type_traits>
 
 #include"declarations.hpp"
-#include"tensor.hpp"
 
 template<bool B, typename T = void>
 using Enable_if = typename std::enable_if<B,T>::type;

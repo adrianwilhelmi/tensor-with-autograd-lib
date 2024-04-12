@@ -1,8 +1,8 @@
 #ifndef TENSOR_SLICE_HPP_
 #define TENSOR_SLICE_HPP_
 
-#include"../declarations.hpp"
 #include"../traits.hpp"
+#include"../declarations.hpp"
 #include"tensor_utils.hpp"
 
 #include<array>
@@ -12,6 +12,7 @@
 #include<cstddef>
 #include<algorithm>
 #include<iostream>
+
 
 template<std::size_t N>
 struct TensorSlice{
