@@ -2,12 +2,14 @@
 #define TENSOR_HPP_
 
 #include"declarations.hpp"
-
 #include"traits.hpp"
 #include"storage.hpp"
 #include"utils/tensor_slice.hpp"
 #include"utils/tensor_utils.hpp"
 #include"tensor_iterator.hpp"
+
+#include<iostream>
+#include<sstream>
 
 template<typename T, std::size_t N>
 class Tensor{
@@ -37,10 +39,20 @@ public:
 	}
 	~Tensor() = default;
 
-	Tensor(TensorSlice<N> d, Storage<T> s) : desc_(d), elems_(s) {}
+	Tensor(const TensorSlice<N>&d, Storage<T>&e, Storage<T>&g) 
+		: desc_(d), req_grad_(true){
+		e.share(this->elems_);
+		g.share(this->grads_);
+	}
+
+	Tensor(const TensorSlice<N>& d, const Storage<T>&e) 
+		: desc_(d), elems_(e), grads_(d.size), req_grad_(false) {}
+
+	Tensor(const TensorSlice<N>& d) 
+		: desc_(d), elems_(d.size), grads_(d.size), req_grad_(false) {}
 
 	template<typename U>
-	Tensor(const Tensor<U,N>&x);
+	Tensor(Tensor<U,N>&x);
 
 	template<typename U>
 	Tensor&operator=(const Tensor<U,N>&x);
@@ -56,6 +68,14 @@ public:
 	template<typename U>
 	Tensor& operator=(std::initializer_list<U>) = delete;
 
+	template<typename M>
+	Enable_if<Tensor_type<M>(), void> share(M&m){
+		m.elems_.share(this->elems_);
+		if(m.req_grad_){
+			m.grads_share(this->grads_);
+		}
+	}
+
 	//indexing
 	template<typename... Args>
 	Enable_if<tensor_impl::Requesting_element<Args...>(), T&>
@@ -64,8 +84,8 @@ public:
 	Enable_if<tensor_impl::Requesting_element<Args...>(), const T&>
 	operator()(Args... args) const;
 
-	TensorRef<T,N-1> dimslice(const std::size_t n, const std::size_t m);
-	TensorRef<const T,N-1> dimslice(std::size_t n, std::size_t m) const;
+	Tensor<T,N-1> dimslice(const std::size_t n, const std::size_t m);
+	Tensor<const T,N-1> dimslice(const std::size_t n, const std::size_t m) const;
 
 	//misc
 	Tensor<T,N>&sort_() {std::sort(this->begin(), this->end()); return*this;}
@@ -86,8 +106,12 @@ public:
 		return N >= i ? desc_.extents[i] : 0;
 	}
 
-	TensorSlice<N> descriptor(){
+	TensorSlice<N> descriptor() const{
 		return this->desc_;
+	}
+
+	Storage<T> storage() const{
+		return this->elems_;
 	}
 
 private:
@@ -98,12 +122,25 @@ private:
 	bool req_grad_;
 };
 
+template<typename T>
+class Tensor<T,0>{
+public:
+
+	std::size_t extent(const std::size_t i) const{
+		return 0 == i ? 1 : 0;
+	}
+
+private:
+	T*elem;
+};
+
+
 template<typename T, std::size_t N>
 template<typename U>
-Tensor<T,N>::Tensor(const Tensor<U,N>&x)
+Tensor<T,N>::Tensor(Tensor<U,N>&x)
 	: req_grad_(false){
 	static_assert(Convertible<U,T>(), "inconsistent types");
-	this->desc_ = x.desc_;
+	this->desc_ = x.descriptor();
 	std::copy(x.begin(), x.end(), this->begin());
 }
 
@@ -154,6 +191,35 @@ Tensor<T,N>& Tensor<T,N>::operator=(TensorInitializer<T,N> init){
 	
 //printing
 template<typename M>
+Enable_if<Tensor_type<M>(), std::ostream&> 
+print_tensor(std::ostream& os, M&m){
+	if constexpr(M::ord > 1){
+		for(std::size_t i = 0; i != m.extent(0); ++i){
+			auto slice = m.dimslice(0, i);
+			print_tensor(os, slice);
+			//print_tensor(os, m.dimslice(0, i));
+		}
+	}
+
+	if constexpr(M::ord == 1){
+		os << "{";
+		for(std::size_t i = 0; i != m.extent(0); ++i){
+			os << std::setw(6) << m(i);
+			if(i + 1 != m.order()) os << ",";
+		}
+		os << "}" << std::endl;
+	}
+	return os;
+}
+
+template<typename M>
+Enable_if<Tensor_type<M>(), std::ostream&>
+operator<<(std::ostream& os, M&m){
+	return print_tensor(os, m);
+}
+
+/*
+template<typename M>
 Enable_if<Tensor_type<M>(), std::ostream&>
 operator<<(std::ostream& os, const M& m){
 	if constexpr(M::ord == 1){
@@ -179,6 +245,8 @@ operator<<(std::ostream& os, const M& m){
 	}
 	return os;
 }
+*/
+
 
 template<typename T, std::size_t N>
 template<typename... Args>
@@ -195,6 +263,67 @@ Tensor<T,N>::operator()(Args... args) const{
 	assert(tensor_impl::check_bounds(this->desc_, args...));
 	return*(data() + this->desc_(args...));
 }	
+
+template<typename T, std::size_t N>
+Tensor<T,N-1> Tensor<T,N>::dimslice(const std::size_t n, const std::size_t m){
+	assert(n < N);
+	assert(m < extent(n));
+	TensorSlice<N-1> ts;
+
+	int j = 0;
+	for(std::size_t i = 0; i < n; ++i){
+		ts.extents[j] = this->desc_.extents[i];
+		ts.strides[j] = this->desc_.strides[i];
+		++j;
+	}
+
+	for(std::size_t i = n + 1; i < N; ++i){
+		ts.extents[j] = this->desc_.extents[i];
+		ts.strides[j] = this->desc_.strides[i];
+		++j;
+	}
+
+	ts.start = this->desc_.start + m * this->desc_.strides[n];
+	ts.size = tensor_impl::compute_size(ts.extents);
+
+	if(this->req_grad_){
+		return{ts, this->elems_, this->grads_};
+	}
+	return{ts, this->elems_};
+}
+
+template<typename T, std::size_t N>
+Tensor<const T,N-1> Tensor<T,N>::dimslice(const std::size_t n, 
+		const std::size_t m) const{
+	assert(n < N);
+	assert(m < extent(n));
+	TensorSlice<N-1> ts;
+
+	int j = 0;
+	for(std::size_t i = 0; i < n; ++i){
+		ts.extents[j] = this->desc_.extents[i];
+		ts.strides[j] = this->desc_.strides[i];
+		++j;
+	}
+
+	for(std::size_t i = n + 1; i < N; ++i){
+		ts.extents[j] = this->desc_.extents[i];
+		ts.strides[j] = this->desc_.strides[i];
+		++j;
+	}
+
+	ts.start = this->desc_.start + m * this->desc_.strides[n];
+	ts.size = tensor_impl::compute_size(ts.extents);
+	
+
+	/*
+	if(this->req_grad_){
+		//return{ts, this->elems_, this->grads_};
+		return Tensor<T,N-1>(ts, this->elems_, this->grads_);
+	}
+	*/
+	return Tensor<const T,N-1>(ts, this->elems_);
+}
 
 
 #endif //TENSOR_HPP_

@@ -125,11 +125,6 @@ namespace tensor_impl{
 	}
 
 	template<typename T>
-	inline T dot_product(const TensorRef<T,1>& a, const TensorRef<T,1>& b){
-		return std::inner_product(a.begin(), a.end(), b.begin(), T());
-	}
-
-	template<typename T>
 	T relu(const T& x){
 		return x > 0 ? x : 0;
 	}

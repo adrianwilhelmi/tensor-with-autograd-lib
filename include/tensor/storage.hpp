@@ -81,6 +81,10 @@ public:
 		}
 	}
 
+	operator Storage<const T>() const{
+		return Storage<const T>(data_.get(), size_);
+	}
+
 	//indexing
 	T&operator[](std::size_t i){
 		return data_[i];
@@ -91,12 +95,11 @@ public:
 	}
 
 	//misc
-	std::size_t size(){
+	std::size_t size() const{
 		return this->size_;
 	}
 
 	T*data(){return this->data_.get();}
-
 	const T*data() const {return this->data_.get();}
 
 	unsigned int observers() const{

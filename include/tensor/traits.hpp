@@ -45,9 +45,6 @@ struct get_tensor_type_result {
 	template<typename T, std::size_t N, typename = Enable_if<(N >= 1)>>
 	static bool check(const Tensor<T,N> &m);
 
-	template <typename T, std::size_t N, typename = Enable_if<(N >= 1)>>
-	static bool check(const TensorRef<T,N> &m);
-
 	static substitution_failure check(...);
 
 	using type = decltype(check(std::declval<M>()));
