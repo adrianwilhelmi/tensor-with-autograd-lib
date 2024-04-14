@@ -1,5 +1,5 @@
-#ifndef STORAGE_TEST_CPP_
-#define STORAGE_TEST_CPP_
+#ifndef TEST_STORAGE_CPP_
+#define TEST_STORAGE_CPP_
 
 #include"../include/tensor/storage.hpp"
 //#include"../include/tensor/traits.hpp"
@@ -148,12 +148,6 @@ TEST(StorageTest, ToVector){
 		EXPECT_EQ(*sit, *ait);
 		++sit;
 	}
-}
-
-
-int main(int argc, char**argv){
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
 }
 
 #endif //STORAGE_TEST_CPP_

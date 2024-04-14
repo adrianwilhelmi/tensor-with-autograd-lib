@@ -3,6 +3,7 @@
 #include"tensor_lib.hpp"
 
 int main(){
+	/*
 	Tensor<int,2> t1 = {
 		{1, 2, 3},
 		{4, 5, 6}
@@ -15,7 +16,7 @@ int main(){
 
 	std::cout << t1 << std::endl;
 	std::cout << t2 << std::endl;
-
+	*/
 	Tensor<int,2> t3 = {
 		{1, 2, 3},
 		{15, 44, 3},
@@ -23,7 +24,9 @@ int main(){
 		{4, 4, 2}
 	};
 
+	std::cout << t3.descriptor() << std::endl;
 	std::cout << t3 << std::endl;
+
 	Tensor<int,1> t4 = t3.dimslice(1,1);
 
 	std::cout << "t4(0) = " << t4(0) << std::endl;
@@ -37,7 +40,6 @@ int main(){
 	for(auto it = t4.begin(); it != t4.end(); ++it){
 		std::cout << *it << std::endl;  
 	}
-
 	return 0;
 }
 

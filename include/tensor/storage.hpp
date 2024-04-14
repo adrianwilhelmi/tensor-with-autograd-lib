@@ -82,9 +82,9 @@ public:
 	}
 
 	operator Storage<const T>() const{
-		return Storage<const T>(data_.get(), size_);
+		return Storage<const T>(data_, size_);
 	}
-
+	
 	//indexing
 	T&operator[](std::size_t i){
 		return data_[i];
@@ -153,8 +153,7 @@ std::ostream&operator<<(std::ostream&os, const Storage<T>&s){
 
 namespace storage{
 	template<typename T>
-	bool same_storage(Storage<T>&a, Storage<T>&b){
-		//assert(same type a, b)
+	bool same_storage(const Storage<T>&a, const Storage<T>&b){
 		return a.data() == b.data();
 	}
 
