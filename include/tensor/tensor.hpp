@@ -121,7 +121,40 @@ public:
 		Tensor<const T,sizeof...(Args)>>
 	view(Args... args) const;
 
+	Tensor<T,N-1> operator[](std::size_t i) {return dimslice(0, i);}
+	Tensor<const T,N-1> operator[](std::size_t i) const {return dimslice(0, i);}
+
+	Tensor<T,N-1> row(const std::size_t i) {return dimslice(0, i);}
+	Tensor<const T,N-1> row(const std::size_t i) const {return dimslice(0, i);}
+
+	Tensor<T,N-1> col(const std::size_t i) {return dimslice(1, i);}
+	Tensor<const T,N-1> col(const std::size_t i) const {return dimslice(1, i);}
+
+	template<std::size_t NN = N, typename = Enable_if<(NN == 1)>>
+	T& row(std::size_t i) {return elems_[i];}
+
+	template<std::size_t NN = N, typename = Enable_if<(NN == 1)>>
+	T& col(std::size_t i) = delete;
+
 	//misc
+	T sum() const {return std::accumulate(this->begin(), this->end(), T{0});}
+	T mean() const {return this->sum() / this->size();}
+	T max() const {return*std::max_element(this->begin(), this->end());}
+	T min() const {return*std::min_element(this->begin(), this->end());}
+	T median() const{
+		Storage<T> sorted(this->elems_);
+		std::sort(sorted.begin(), sorted.end());
+		std::size_t mid = sorted.size() / 2;
+		if(sorted.size() % 2 == 0){
+			return(sorted[mid] + sorted[mid - 1]) / T(2);
+		}
+		else{
+			return sorted[mid];
+		}
+	}
+
+	bool empty() const {return begin() == end();}
+
 	Tensor<T,N>&sort_() {std::sort(this->begin(), this->end()); return*this;}
 	Tensor<T,N> sort() {
 		Tensor<T,N> copy(*this);
@@ -131,8 +164,6 @@ public:
 	
 	T*data() {return elems_.data();}
 	const T*data() const {return elems_.data();}
-
-	bool empty() const {return this->begin() == this->end();}
 
 	std::size_t order() const{return N;}
 	std::size_t extent(const std::size_t i) const{return N >= i ? desc_.extents[i] : 0;}
@@ -149,11 +180,26 @@ public:
 	Storage<T>&storage(){
 		return this->elems_;
 	}
+
+	template<typename U>
+	Tensor<U,N> convert() const{
+		Storage<U> s = this->elems_.convert();
+		TensorSlice<N> d = this->desc_;
+		if(this->req_grad_){
+			Storage<U> g = this->grads_.convert();
+			return {d, s, g};
+		}
+		return {d, s};
+	}
 	
 	//autograd
-	
 	bool requires_grad() const{
 		return this->req_grad_;
+	}
+
+	void init_grad(){
+		this->grads_.reset(elems_.size());
+		this->grads_.fill(T(0));
 	}
 
 private:

@@ -122,6 +122,11 @@ public:
 		}
 		return result;
 	}
+
+	void reset(std::size_t new_size){
+		this->data_ = std::make_shared<T[]>(new_size);
+		size_ = new_size;
+	}
 	
 	void fill(const T&val){
 		std::fill(this->begin(), this->end(), val);
