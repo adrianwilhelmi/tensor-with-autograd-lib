@@ -41,6 +41,30 @@ TEST(TensorTest, Sharing){
 	ASSERT_TRUE(tensor::same_storage(t1, t2));
 }
 
+TEST(TensorTest, Dimslice){
+	Tensor<int,2> t1 = {
+		{1, 2},
+		{3, 3},
+		{44, 2}
+	};
+	Tensor<int,1> t2; //= t1.dimslice;
+	//t1.share(t2);
+	t2 = t1.dimslice(1, 1);
+
+	ASSERT_EQ(t1.dimslice(1,1).size(), t2.size());
+	ASSERT_EQ(t1.dimslice(1,1).extent(0), t2.extent(0));
+	ASSERT_EQ(t1.dimslice(1,1).order(), t2.order());
+
+	t2(1) = 14;
+
+	EXPECT_EQ(t2(1), t1(1,1));
+
+	//ASSERT_TRUE(storage::same_storage(t1.storage(), t2.storage()));
+	ASSERT_TRUE(tensor::same_storage(t1.dimslice(1,1), t2));
+}
+
+
+
 
 
 #endif

@@ -50,11 +50,13 @@ public:
 		g.share(this->grads_);
 	}
 
-	Tensor(const TensorSlice<N>& d, const Storage<T>&e) 
-		: desc_(d), elems_(e), grads_(d.size), req_grad_(false) {}
+	Tensor(const TensorSlice<N>& d, Storage<T>&e) : desc_(d){
+		this->req_grad_ = false;
+		e.share(this->elems_);
+	}
 
 	Tensor(const TensorSlice<N>& d) 
-		: desc_(d), elems_(d.size), grads_(d.size), req_grad_(false) {}
+		: desc_(d), elems_(d.size), req_grad_(false) {}
 
 	template<typename U>
 	Tensor(Tensor<U,N>&x);
@@ -288,6 +290,7 @@ Tensor<T,N-1> Tensor<T,N>::dimslice(const std::size_t n, const std::size_t m){
 		return{ts, this->elems_, this->grads_};
 	}
 	return{ts, this->elems_};
+	
 }
 
 template<typename T, std::size_t N>
