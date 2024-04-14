@@ -7,6 +7,7 @@
 #include"utils/tensor_slice.hpp"
 #include"utils/tensor_utils.hpp"
 #include"tensor_iterator.hpp"
+#include"function.hpp"
 
 #include<iostream>
 #include<sstream>
@@ -34,6 +35,7 @@ public:
 	Tensor&operator=(Tensor&x){
 		if(this != &x){
 			this->req_grad_ = x.req_grad_;
+			this->grad_fn_ = FunctionEmpty{};
 			this->desc_ = x.desc_;
 			x.elems_.share(this->elems_);
 			if(x.req_grad_){
@@ -45,18 +47,20 @@ public:
 	~Tensor() = default;
 
 	Tensor(const TensorSlice<N>&d, Storage<T>&e, Storage<T>&g) 
-		: desc_(d), req_grad_(true){
+		: desc_(d), grad_fn_(FunctionEmpty{}),req_grad_(true){
 		e.share(this->elems_);
 		g.share(this->grads_);
 	}
 
 	Tensor(const TensorSlice<N>& d, Storage<T>&e) : desc_(d){
+		this->grad_fn_ = FunctionEmpty{};
 		this->req_grad_ = false;
 		e.share(this->elems_);
 	}
 
 	Tensor(const TensorSlice<N>& d) 
-		: desc_(d), elems_(d.size), req_grad_(false) {}
+		: desc_(d), elems_(d.size), 
+		grad_fn_(FunctionEmpty{}), req_grad_(false) {}
 
 	template<typename U>
 	Tensor(Tensor<U,N>&x);
@@ -135,7 +139,7 @@ private:
 	TensorSlice<N> desc_;
 	Storage<T> elems_;
 	Storage<T> grads_;
-
+	func_variant<T,N> grad_fn_;
 	bool req_grad_;
 };
 
@@ -153,7 +157,8 @@ private:
 template<typename T, std::size_t N>
 template<typename U>
 Tensor<T,N>::Tensor(Tensor<U,N>&x)
-	: req_grad_(false){
+	: grad_fn_(FunctionEmpty{}),
+	req_grad_(false){
 	static_assert(Convertible<U,T>(), "inconsistent types");
 	this->desc_ = x.descriptor();
 	std::copy(x.begin(), x.end(), this->begin());
@@ -164,6 +169,7 @@ template<typename U>
 Tensor<T,N>& Tensor<T,N>::operator=(const Tensor<U,N>&x){
 	static_assert(Convertible<U,T>(), "inconsistent types");
 	this->req_grad_ = false;
+	this->grad_fn_ = FunctionEmpty{};
 	this->desc_ = x.desc_;
 	x.elems_.share(this->elems_);
 	return*this;
@@ -175,12 +181,14 @@ Tensor<T,N>::Tensor(Exts... exts)
 	: desc_{exts...},
 	elems_(desc_.size),
 	grads_(),
+  	grad_fn_(FunctionEmpty{}),
 	req_grad_(false)
 {}
 
 template<typename T, std::size_t N>
 Tensor<T,N>::Tensor(TensorInitializer<T,N> init)
 	: req_grad_{false}{
+	grad_fn_ = FunctionEmpty{};
 	desc_.start = 0;
 	desc_.extents = tensor_impl::derive_extents<N>(init);
 	desc_.size = tensor_impl::compute_strides(desc_.extents, desc_.strides);
@@ -194,6 +202,7 @@ Tensor<T,N>::Tensor(TensorInitializer<T,N> init)
 template<typename T, std::size_t N>
 Tensor<T,N>& Tensor<T,N>::operator=(TensorInitializer<T,N> init){
 	req_grad_ = false;
+	grad_fn_ = FunctionEmpty{};
 	desc_.start = 0;
 	desc_.extents = tensor_impl::derive_extents<N>(init);
 	desc_.size = tensor_impl::compute_strides(desc_.extents, desc_.strides);
@@ -290,7 +299,6 @@ Tensor<T,N-1> Tensor<T,N>::dimslice(const std::size_t n, const std::size_t m){
 		return{ts, this->elems_, this->grads_};
 	}
 	return{ts, this->elems_};
-	
 }
 
 template<typename T, std::size_t N>
@@ -317,13 +325,16 @@ Tensor<const T,N-1> Tensor<T,N>::dimslice(const std::size_t n,
 	ts.size = tensor_impl::compute_size(ts.extents);
 	
 
+	if(this->req_grad_){
+		return{ts, this->elems_, this->grads_};
+	}
+	return{ts, this->elems_};
 	/*
 	if(this->req_grad_){
-		//return{ts, this->elems_, this->grads_};
 		return Tensor<T,N-1>(ts, this->elems_, this->grads_);
 	}
-	*/
 	return Tensor<const T,N-1>(ts, this->elems_);
+	*/
 }
 
 #endif //TENSOR_HPP_
