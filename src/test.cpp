@@ -17,6 +17,8 @@ int main(){
 	std::cout << t1 << std::endl;
 	std::cout << t2 << std::endl;
 	*/
+
+
 	Tensor<int,2> t3 = {
 		{1, 2, 3},
 		{15, 44, 3},
@@ -24,22 +26,16 @@ int main(){
 		{4, 4, 2}
 	};
 
-	std::cout << t3.descriptor() << std::endl;
+	std::cout << t3.view(2, 6) << std::endl;
+
 	std::cout << t3 << std::endl;
 
-	Tensor<int,1> t4 = t3.dimslice(1,1);
+	std::cout << t3.dimslices(0, 1, 2) << std::endl;
 
-	std::cout << "t4(0) = " << t4(0) << std::endl;
-	std::cout << "t4(1) = " << t4(1) << std::endl;
-	std::cout << "t4(2) = " << t4(2) << std::endl;
-	std::cout << "t4(3) = " << t4(3) << std::endl;
-
-	std::cout << "t4" << std::endl;
+	Tensor<int,2> t4 = t3.dimslices(0, 0, 3);
 	std::cout << t4 << std::endl;
 
-	for(auto it = t4.begin(); it != t4.end(); ++it){
-		std::cout << *it << std::endl;  
-	}
+
 	return 0;
 }
 

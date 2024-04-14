@@ -100,6 +100,27 @@ public:
 	Tensor<T,N-1> dimslice(const std::size_t n, const std::size_t m);
 	Tensor<const T,N-1> dimslice(const std::size_t n, const std::size_t m) const;
 
+	template<typename... Args>
+	Enable_if<tensor_impl::Requesting_element<Args...>(), Tensor<T,N>>
+	dimslices(std::size_t dim, Args... args);
+	template<typename... Args>
+	Enable_if<tensor_impl::Requesting_element<Args...>(), Tensor<const T,N>>
+	dimslices(std::size_t dim, Args... args) const;
+
+	Tensor<T,N> dimslices_arange(std::size_t dim, 
+			std::size_t from, std::size_t to);
+	Tensor<const T,N> dimslices_arange(std::size_t dim, 
+			std::size_t from, std::size_t to) const;
+
+	template<typename... Args>
+	Enable_if<tensor_impl::Requesting_element<Args...>(),
+		Tensor<T,sizeof...(Args)>>
+	view(Args... args);
+	template<typename... Args>
+	Enable_if<tensor_impl::Requesting_element<Args...>(),
+		Tensor<const T,sizeof...(Args)>>
+	view(Args... args) const;
+
 	//misc
 	Tensor<T,N>&sort_() {std::sort(this->begin(), this->end()); return*this;}
 	Tensor<T,N> sort() {
@@ -295,9 +316,8 @@ Tensor<T,N-1> Tensor<T,N>::dimslice(const std::size_t n, const std::size_t m){
 	ts.start = this->desc_.start + m * this->desc_.strides[n];
 	ts.size = tensor_impl::compute_size(ts.extents);
 
-	if(this->req_grad_){
+	if(this->req_grad_)
 		return{ts, this->elems_, this->grads_};
-	}
 	return{ts, this->elems_};
 }
 
@@ -325,9 +345,8 @@ Tensor<const T,N-1> Tensor<T,N>::dimslice(const std::size_t n,
 	ts.size = tensor_impl::compute_size(ts.extents);
 	
 
-	if(this->req_grad_){
+	if(this->req_grad_)
 		return{ts, this->elems_, this->grads_};
-	}
 	return{ts, this->elems_};
 	/*
 	if(this->req_grad_){
@@ -336,6 +355,147 @@ Tensor<const T,N-1> Tensor<T,N>::dimslice(const std::size_t n,
 	return Tensor<const T,N-1>(ts, this->elems_);
 	*/
 }
+
+template<typename T, std::size_t N>
+template<typename... Args>
+Enable_if<tensor_impl::Requesting_element<Args...>(), Tensor<T,N>>
+Tensor<T,N>::dimslices(std::size_t dim, Args... args){
+	assert(dim < order());
+	assert(sizeof...(args) <= extent(dim));
+	assert(sizeof...(args) < 3); //FOR NOW WORKS ONLY WITH 2 SUBTENSORS
+
+	TensorSlice<N> d;
+
+	d.extents = this->desc_.extents;
+	d.extents[dim] = sizeof...(args);
+	d.strides = this->desc_.strides;
+	d.size = tensor_impl::compute_size(d.extents);
+
+	std::array<std::size_t, sizeof...(args)> indexes = {
+		static_cast<std::size_t>(args)...};
+
+	d.start = this->desc_.start;
+	std::sort(indexes.begin(), indexes.end());
+	d.start += indexes.front() * this->desc_.strides[dim];
+
+	d.strides[dim] *= (indexes[1] - indexes[0]);
+
+	if(this->req_grad_)
+		return{d, this->elems_, this->grads_};
+	return{d, this->elems_};
+}
+
+template<typename T, std::size_t N>
+template<typename... Args>
+Enable_if<tensor_impl::Requesting_element<Args...>(), Tensor<const T,N>>
+Tensor<T,N>::dimslices(std::size_t dim, Args... args) const{
+	assert(dim < order());
+	assert(sizeof...(args) <= extent(dim));
+	assert(sizeof...(args) < 3); //FOR NOW WORKS ONLY WITH 2 SUBTENSORS
+
+	TensorSlice<N> d;
+
+	d.extents = this->desc_.extents;
+	d.extents[dim] = sizeof...(args);
+	d.strides = this->desc_.strides;
+	d.size = tensor_impl::compute_size(d.extents);
+
+	std::array<std::size_t, sizeof...(args)> indexes = {
+		static_cast<std::size_t>(args)...};
+
+	d.start = this->desc_.start;
+	std::sort(indexes.begin(), indexes.end());
+	d.start += indexes.front() * this->desc_.strides[dim];
+	
+	d.strides[dim] *= (indexes[1] - indexes[0]);
+
+	if(this->req_grad_)
+		return{d, this->elems_, this->grads_};
+	return{d, this->elems_};
+}
+
+template<typename T, std::size_t N>
+Tensor<T,N> Tensor<T,N>::dimslices_arange(std::size_t dim,
+		std::size_t from, std::size_t to){
+	assert(dim < order());
+	assert(from <= to);
+	assert(to <= this->extent(dim));
+
+	TensorSlice<N> d;
+
+	d.extents = this->desc_.extents;
+	d.extents[dim] = to - from + 1;
+	d.strides = this->desc_.strides;
+	d.size = tensor_impl::compute_size(d.extents);
+
+	d.start = this->desc_.start + from * this->desc.strides[dim];
+
+	if(this->req_grad_)
+		return{d, this->elems_, this->grads_};
+	return{d, this->elems_};
+}
+
+template<typename T, std::size_t N>
+Tensor<const T,N> Tensor<T,N>::dimslices_arange(std::size_t dim,
+		std::size_t from, std::size_t to) const{
+	assert(dim < order());
+	assert(from <= to);
+	assert(to <= this->extent(dim));
+
+	TensorSlice<N> d;
+
+	d.extents = this->desc_.extents;
+	d.extents[dim] = to - from + 1;
+	d.strides = this->desc_.strides;
+	d.size = tensor_impl::compute_size(d.extents);
+
+	d.start = this->desc_.start + from * this->desc.strides[dim];
+
+	if(this->req_grad_)
+		return{d, this->elems_, this->grads_};
+	return{d, this->elems_};
+}
+
+template<typename T, std::size_t N>
+template<typename... Args>
+Enable_if<tensor_impl::Requesting_element<Args...>(), Tensor<T,sizeof...(Args)>>
+Tensor<T,N>::view(Args... args){
+	std::size_t args_product = (... * args);
+	std::size_t exts_product = std::accumulate(this->desc_.extents.begin(),
+			this->desc_.extents.end(), 1, [](std::size_t a,
+				std::size_t b) {return a * b;});
+
+	assert(args_product == exts_product);
+
+	std::array<std::size_t, sizeof...(Args)> exts{
+		static_cast<std::size_t>(args)...};
+	TensorSlice<sizeof...(Args)> d{exts};
+
+	if(this->req_grad_)
+		return{d, this->elems_, this->grads_};
+	return{d, this->elems_};
+}
+
+template<typename T, std::size_t N>
+template<typename... Args>
+Enable_if<tensor_impl::Requesting_element<Args...>(), Tensor<const T,sizeof...(Args)>>
+Tensor<T,N>::view(Args... args) const{
+	std::size_t args_product = (... * args);
+	std::size_t exts_product = std::accumulate(this->desc_.extents.begin(),
+			this->desc_.extents.end(), 1, [](std::size_t a,
+				std::size_t b) {return a * b;});
+
+	assert(args_product == exts_product);
+
+	std::array<std::size_t, sizeof...(Args)> exts{
+		static_cast<std::size_t>(args)...};
+	TensorSlice<sizeof...(Args)> d{exts};
+
+	if(this->req_grad_)
+		return{d, this->elems_, this->grads_};
+	return{d, this->elems_};
+}
+
 
 #endif //TENSOR_HPP_
 
