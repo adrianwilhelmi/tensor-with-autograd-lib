@@ -1,0 +1,10 @@
+
+	Tensor<int> t3 = tensor::from_list<int,2>({
+		{1, 2, 3},
+		{15, 44, 3},
+		{31, 12, 3},
+		{4, 4, 2}
+	});
+
+	std::cout << t3.view(2, 6) << std::endl;
+

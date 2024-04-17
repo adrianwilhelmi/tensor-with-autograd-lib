@@ -1,129 +1,104 @@
 #ifndef TENSOR_SLICE_HPP_
 #define TENSOR_SLICE_HPP_
 
-#include"../traits.hpp"
-#include"../declarations.hpp"
-#include"tensor_utils.hpp"
-
-#include<array>
+#include<vector>
 #include<numeric>
-#include<type_traits>
 #include<cassert>
-#include<cstddef>
-#include<algorithm>
 #include<iostream>
 
-
-template<std::size_t N>
 struct TensorSlice{
-	TensorSlice();
-	TensorSlice(std::size_t s, std::initializer_list<std::size_t> exts);
-	TensorSlice(std::size_t s, std::initializer_list<std::size_t> exts, std::initializer_list<std::size_t> strs);
+	TensorSlice() : size(1), start(0) {}
 
-	TensorSlice(const std::array<std::size_t,N> &exts);
+	TensorSlice(std::initializer_list<std::size_t> exts) 
+		: start(0), extents(exts){
+		compute_strides();
+	}
+
+	TensorSlice(std::size_t s, std::initializer_list<std::size_t> exts)
+		: start(s), extents(exts){
+		compute_strides();
+	}
+
+	TensorSlice(std::size_t s, std::initializer_list<std::size_t> exts,
+			std::initializer_list<std::size_t> strs)
+		: start(s), extents(exts), strides(strs){
+		compute_size();
+	}
+
+	TensorSlice(const std::vector<std::size_t>&exts)
+		: start(0), extents(exts){
+		compute_strides();
+	}
+
+	TensorSlice(std::size_t order)
+		: size(0), start(0), extents(order), strides(order) {}
 
 	template<typename... Dims>
-	TensorSlice(Dims... dims);
+	explicit TensorSlice(Dims... dims) : extents{static_cast<std::size_t>(dims)...}{
+		compute_strides();
+	}
 
-	template<typename... Dims>
-	std::size_t operator()(Dims... dims) const;
+	void compute_strides(){
+		if(extents.empty()) return;
 
-	std::size_t offset(const std::array<std::size_t,N> &pos) const;
+		strides.resize(extents.size());
+		size = 1;
+		for(int i = extents.size() - 1; i >= 0; --i){
+			strides[i] = size;
+			size *= extents[i];
+		}
+	}
+
+	void compute_size(){
+		if(extents.empty()) return;
+
+		size = std::accumulate(extents.begin(), extents.end(), 
+				1, std::multiplies<std::size_t>());
+	}
+
+	std::size_t offset(const std::vector<std::size_t>&pos) const{
+		assert(pos.size() == extents.size());
+		return start + 
+			std::inner_product(pos.begin(), pos.end(),
+					strides.begin(), std::size_t(0));
+	}
+
+	template<typename... Indices>
+	std::size_t operator()(Indices... indices) const{
+		assert(sizeof...(Indices) == extents.size() && "inconsistent dimensions");
+		std::vector<std::size_t> idx{
+			static_cast<std::size_t>(indices)...};
+		return offset(idx);
+	}
 
 	std::size_t size;
 	std::size_t start;
-	std::array<std::size_t,N> extents;
-	std::array<std::size_t,N> strides;
+	std::vector<std::size_t> extents;
+	std::vector<std::size_t> strides;
 };
 
-template<std::size_t N>
-TensorSlice<N>::TensorSlice() : size{1}, start{0} {
-	std::fill(extents.begin(), extents.end(), 0);
-	std::fill(strides.begin(), strides.end(), 1);
-}
-
-template<std::size_t N>
-TensorSlice<N>::TensorSlice(std::size_t s, std::initializer_list<std::size_t> exts) : start(s) {
-	assert(exts.size() == N);
-	std::copy(exts.begin(), exts.end(), extents.begin());
-	size = tensor_impl::compute_strides(extents, strides);
-}
-
-template<std::size_t N>
-TensorSlice<N>::TensorSlice(std::size_t s,
-		std::initializer_list<std::size_t> exts,
-		std::initializer_list<std::size_t> strs)
-	: start(s){
-	assert(exts.size() == N);
-	std::copy(exts.begin(), exts.end(), extents.begin());
-	std::copy(strs.begin(), strs.end(), strides.begin());
-	size = tensor_impl::compute_size(extents);
-}
-
-template<std::size_t N>
-TensorSlice<N>::TensorSlice(const std::array<std::size_t, N> &exts)
-	: start{0}, extents(exts){
-	assert(exts.size() == N);
-	size = tensor_impl::compute_strides(extents, strides);
-}
-
-template<std::size_t N> 
-template<typename... Dims>
-TensorSlice<N>::TensorSlice(Dims... dims) : start{0}{
-	static_assert(sizeof...(Dims) == N,
-			"tensor slice constructor: inconsistent dimensions");
-
-	std::size_t args[N] {std::size_t(dims)...};
-	std::copy(std::begin(args), std::end(args), extents.begin());
-	size = tensor_impl::compute_strides(extents, strides);
-}
-
-template<std::size_t N>
-template<typename... Dims>
-std::size_t TensorSlice<N>::operator()(Dims... dims) const{
-	//static_assert(sizeof...(Dims) == N, "tensor slice (): inconsistent dimensions");
-
-	std::size_t args[N] {std::size_t(dims)...};
-	return start + std::inner_product(args, args+N, strides.begin(), std::size_t(0));
-}
-
-template<std::size_t N>
-std::size_t TensorSlice<N>::offset(const std::array<std::size_t, N> &pos) const{
-	assert(pos.size() == N);
-	return start + std::inner_product(pos.begin(), pos.end(), strides.begin(), size_t{0});
-}
-
-template<std::size_t N>
-bool same_extents(const TensorSlice<N>&a, const TensorSlice<N>&b){
+bool same_extents(const TensorSlice&a, const TensorSlice&b){
 	return a.extents == b.extents;
 }
 
-template<std::size_t N>
-std::ostream&operator<<(std::ostream &os, const std::array<std::size_t, N> &a){
-	for(auto x : a) os << x << ' ';
+inline bool operator==(const TensorSlice&a, const TensorSlice&b){
+	return a.start == b.start && a.extents == b.extents &&
+		a.strides == b.strides;
+}
+
+inline bool operator!=(const TensorSlice&a, const TensorSlice&b){
+	return !(a==b);
+}
+
+std::ostream&operator<<(std::ostream&os, const TensorSlice&s){
+	os << "size = " << s.size << std::endl;
+	os << "start = " << s.start << std::endl;
+	os << "extents = ";
+	for(auto &e : s.extents) os << e << " ";
+	os << "\nstrides = ";
+	for(auto &e : s.strides) os << e << " ";
+	os << std::endl;
 	return os;
 }
 
-template<std::size_t N>
-inline bool operator==(const TensorSlice<N>&a, const TensorSlice<N>&b){
-	return a.start == b.start &&
-		std::equal(a.extents.cbegin(), a.extents.cend(), b.extents.cbegin()) && 
-		std::equal(a.strides.cbegin(), a.strides.cend(), b.strides.cbegin());
-}
-
-template<std::size_t N>
-inline bool operator!=(const TensorSlice<N>&a, const TensorSlice<N>&b){
-	return !(a == b);
-}
-
-template<std::size_t N>
-std::ostream&operator<<(std::ostream&os, const TensorSlice<N> &ms){
-	os << "size = " << ms.size << std::endl;
-	os << "start = " << ms.start << std::endl;
-	os << "extents = " << ms.extents << std::endl;
-	os << "strides = " << ms.strides << std::endl;
-	return os;
-}
-
-#endif // TENSOR_SLICE_HPP_
-
+#endif //TENSOR_SLICE_HPP_

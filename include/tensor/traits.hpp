@@ -42,8 +42,8 @@ struct substitution_succeeded<substitution_failure> : std::false_type {};
 
 template<typename M>
 struct get_tensor_type_result {
-	template<typename T, std::size_t N, typename = Enable_if<(N >= 1)>>
-	static bool check(const Tensor<T,N> &m);
+	template<typename T>
+	static bool check(const Tensor<T> &m);
 
 	static substitution_failure check(...);
 

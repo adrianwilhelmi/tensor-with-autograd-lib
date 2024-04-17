@@ -7,11 +7,11 @@
 #include<gtest/gtest.h>
 
 TEST(TensorTest, Constructor){
-	Tensor<int,2> t = {
+	Tensor<int> t = tensor::from_list<int,2>({
 		{1, 2},
 		{3, 3},
 		{44, 2}
-	};
+	});
 	ASSERT_EQ(t.size(), 6);
 	ASSERT_EQ(t.extent(0), 3);
 	ASSERT_EQ(t.extent(1), 2);
@@ -19,12 +19,12 @@ TEST(TensorTest, Constructor){
 }
 
 TEST(TensorTest, Sharing){
-	Tensor<int,2> t1 = {
+	Tensor<int> t1 = tensor::from_list<int,2>({
 		{1, 2},
 		{3, 3},
 		{44, 2}
-	};
-	Tensor<int,2> t2;
+	});
+	Tensor<int> t2;
 	//t1.share(t2);
 	t2 = t1;
 
@@ -42,14 +42,17 @@ TEST(TensorTest, Sharing){
 }
 
 TEST(TensorTest, Dimslice){
-	Tensor<int,2> t1 = {
+	Tensor<int> t1 = tensor::from_list<int,2>({
 		{1, 2},
 		{3, 3},
 		{44, 2}
-	};
-	Tensor<int,1> t2; //= t1.dimslice;
+	});
+	Tensor<int> t2; //= t1.dimslice;
 	//t1.share(t2);
 	t2 = t1.dimslice(1, 1);
+
+	std::cout << t1 << std::endl;
+	std::cout << t2 << std::endl;
 
 	ASSERT_EQ(t1.dimslice(1,1).size(), t2.size());
 	ASSERT_EQ(t1.dimslice(1,1).extent(0), t2.extent(0));

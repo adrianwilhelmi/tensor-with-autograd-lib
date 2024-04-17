@@ -4,17 +4,17 @@
 #include"declarations.hpp"
 #include"tensor.hpp"
 
-template<typename T, std::size_t N>
+template<typename T>
 class TensorIterator;
 
-template<typename T, std::size_t N>
-bool operator<(const TensorIterator<T,N>&lhs, const TensorIterator<T,N>&rhs);
+template<typename T>
+bool operator<(const TensorIterator<T>&lhs, const TensorIterator<T>&rhs);
 
-template<typename T, std::size_t N>
+template<typename T>
 class TensorIterator{
-	template<typename U, size_t NN>
+	template<typename U>
 	friend std::ostream&operator<<(std::ostream&os, 
-			const TensorIterator<U,NN>&iter);
+			const TensorIterator<U>&iter);
 
 public:
 	//using iterator_category = std::forward_iterator_tag;
@@ -26,10 +26,10 @@ public:
 
 	TensorIterator(const TensorIterator&) = default;
 
-	TensorIterator(const TensorSlice<N>&s, T*base, bool limit=false);
+	TensorIterator(const TensorSlice&s, T*base, bool limit=false);
 	TensorIterator&operator=(const TensorIterator&);
 
-	const TensorSlice<N>&descriptor() const {return desc;}
+	const TensorSlice& descriptor() const {return desc;}
 
 	T&operator*() {return*ptr;}
 	T*operator->(){return ptr;}
@@ -43,9 +43,9 @@ public:
 	TensorIterator&operator--();
 	TensorIterator operator--(int);
 
-	TensorIterator<T,N>&operator+=(difference_type n);
+	TensorIterator<T>&operator+=(difference_type n);
 
-	friend bool operator< <>(const TensorIterator<T,N>&lhs, const TensorIterator<T,N>&rhs);
+	friend bool operator< <>(const TensorIterator<T>&lhs, const TensorIterator<T>&rhs);
 
 
 	static std::ptrdiff_t difference(const TensorIterator&a, const TensorIterator&b){
@@ -53,7 +53,8 @@ public:
 		assert(a.descriptor() == b.descriptor());
 
 		std::ptrdiff_t diff = 0;
-		for(std::size_t i = 0; i < N; ++i){
+		std::size_t ord = a.size();
+		for(std::size_t i = 0; i < ord; ++i){
 			auto stride_diff = (a.index[i] - b.index[i]) * a.desc.strides[i];
 			diff += stride_diff;
 		}
@@ -68,14 +69,14 @@ private:
 	T*end;
 	T*begin;
 
-	std::array<size_t, N> index;
-	const TensorSlice<N>&desc;
+	std::vector<std::size_t> index;
+	const TensorSlice& desc;
 	T*ptr;
 };
 
-template<typename T, std::size_t N>
-TensorIterator<T,N>::TensorIterator(const TensorSlice<N>&s, T*base, bool limit)
-	: desc(s) {
+template<typename T>
+TensorIterator<T>::TensorIterator(const TensorSlice&s, T*base, bool limit)
+	: index(s.extents.size()), desc(s) {
 	std::fill(index.begin(), index.end(), 0);
 
 	index[0] = desc.extents[0];
@@ -91,61 +92,61 @@ TensorIterator<T,N>::TensorIterator(const TensorSlice<N>&s, T*base, bool limit)
 	}
 }
 
-template<typename T, std::size_t N>
-TensorIterator<T,N>&TensorIterator<T,N>::operator=(const TensorIterator &iter){
+template<typename T>
+TensorIterator<T>&TensorIterator<T>::operator=(const TensorIterator &iter){
 	std::copy(iter.index.begin(), iter.index.end(), index.begin());
 	ptr = iter.ptr;
 	return*this;
 }
 
-template<typename T, std::size_t N>
-TensorIterator<T,N>&TensorIterator<T,N>::operator++(){
+template<typename T>
+TensorIterator<T>&TensorIterator<T>::operator++(){
 	increment();
 	return*this;
 }
 
-template<typename T, std::size_t N>
-TensorIterator<T,N> TensorIterator<T,N>::operator++(int){
-	TensorIterator<T,N> x = *this;
+template<typename T>
+TensorIterator<T> TensorIterator<T>::operator++(int){
+	TensorIterator<T> x = *this;
 	increment();
 	return*x;
 }
 
-template<typename T, std::size_t N>
-TensorIterator<T,N>&TensorIterator<T,N>::operator--(){
+template<typename T>
+TensorIterator<T>&TensorIterator<T>::operator--(){
 	decrement();
 	return*this;
 }
 
-template<typename T, std::size_t N>
-TensorIterator<T,N> TensorIterator<T,N>::operator--(int){
-	TensorIterator<T,N> x = *this;
+template<typename T>
+TensorIterator<T> TensorIterator<T>::operator--(int){
+	TensorIterator<T> x = *this;
 	decrement();
 	return*x;
 }
 
-template<typename T, std::size_t N>
-inline std::ptrdiff_t operator-(const TensorIterator<T,N>&a, const TensorIterator<T,N>&b){
-	return TensorIterator<T,N>::difference(a,b);
+template<typename T>
+inline std::ptrdiff_t operator-(const TensorIterator<T>&a, const TensorIterator<T>&b){
+	return TensorIterator<T>::difference(a,b);
 }
 
-template<typename T, std::size_t N>
-TensorIterator<T,N> operator-(const TensorIterator<T,N>&it, int n){
-	TensorIterator<T,N> temp = it;
+template<typename T>
+TensorIterator<T> operator-(const TensorIterator<T>&it, int n){
+	TensorIterator<T> temp = it;
 	for(int i = 0; i < std::abs(n); ++i){
 		--temp;
 	}
 	return temp;
 }
 
-template<typename T, std::size_t N>
-TensorIterator<T,N> operator-(int n, const TensorIterator<T,N>&it){
+template<typename T>
+TensorIterator<T> operator-(int n, const TensorIterator<T>&it){
 	return it - n;
 }
 
-template<typename T, std::size_t N>
-TensorIterator<T,N> operator+(const TensorIterator<T,N>&it, int n){
-	TensorIterator<T,N> temp = it;
+template<typename T>
+TensorIterator<T> operator+(const TensorIterator<T>&it, int n){
+	TensorIterator<T> temp = it;
 
 	for(int i = 0; i < std::abs(n); ++i){
 		if(n > 0) ++temp;
@@ -155,18 +156,18 @@ TensorIterator<T,N> operator+(const TensorIterator<T,N>&it, int n){
 	return temp;
 }
 
-template<typename T, std::size_t N>
-TensorIterator<T,N> operator+(int n, TensorIterator<T,N>&it){
+template<typename T>
+TensorIterator<T> operator+(int n, TensorIterator<T>&it){
 	return it + n;
 }
 
-template<typename T, std::size_t N>
-void TensorIterator<T,N>::increment(){
+template<typename T>
+void TensorIterator<T>::increment(){
 	if(ptr == end){
 		return;
 	}
 
-	std::size_t d = N - 1;
+	std::size_t d = index.size() - 1;
 	while(true){
 		ptr += desc.strides[d];
 		++index[d];
@@ -184,13 +185,13 @@ void TensorIterator<T,N>::increment(){
 	}
 }
 
-template<typename T, std::size_t N>
-void TensorIterator<T,N>::decrement(){
+template<typename T>
+void TensorIterator<T>::decrement(){
 	if(ptr == begin){
 		return;
 	}
 
-	std::size_t d = N - 1;
+	std::size_t d = index.size() - 1;
 	while (true) {
 		if (index[d] == 0) {
 			if (d != 0) {
@@ -215,8 +216,8 @@ void TensorIterator<T,N>::decrement(){
 	}
 }
 
-template<typename T, std::size_t N>
-TensorIterator<T,N>& TensorIterator<T,N>::operator+=(difference_type n){
+template<typename T>
+TensorIterator<T>& TensorIterator<T>::operator+=(difference_type n){
 	if(n >= 0){
 		for(difference_type i = 0; i < n; ++i){
 			this->increment();
@@ -229,34 +230,33 @@ TensorIterator<T,N>& TensorIterator<T,N>::operator+=(difference_type n){
 	return*this;
 }
 
-template<typename T, std::size_t N>
-std::ostream&operator<<(std::ostream&os, const TensorIterator<T,N> &iter){
+template<typename T>
+std::ostream&operator<<(std::ostream&os, const TensorIterator<T> &iter){
 	os << "target = " << *iter.ptr << std::endl;
 	os << "index = " << iter.index << std::endl;
 	return os;
 }
 
-template<typename T, std::size_t N>
-inline bool operator==(const TensorIterator<T,N>&a, const TensorIterator<T,N>&b){
+template<typename T>
+inline bool operator==(const TensorIterator<T>&a, const TensorIterator<T>&b){
 	assert(a.descriptor() == b.descriptor());
 	return &*a == &*b;
 }
 
-template<typename T, std::size_t N>
-inline bool operator!=(const TensorIterator<T,N>&a, const TensorIterator<T,N>&b){
+template<typename T>
+inline bool operator!=(const TensorIterator<T>&a, const TensorIterator<T>&b){
 	return !(a == b);
 }
 
-template<typename T, std::size_t N>
-bool operator<(const TensorIterator<T,N>&lhs, const TensorIterator<T,N>&rhs){
+template<typename T>
+bool operator<(const TensorIterator<T>&lhs, const TensorIterator<T>&rhs){
 	return lhs.ptr < rhs.ptr;
 }
 
-template<typename T, std::size_t N>
-bool operator>(const TensorIterator<T,N>&lhs, const TensorIterator<T,N>&rhs){
+template<typename T>
+bool operator>(const TensorIterator<T>&lhs, const TensorIterator<T>&rhs){
 	//return (!(lhs.ptr < rhs.ptr) && (lhs != rhs));
 	return !(lhs.ptr < rhs.ptr);
 }
-
 
 #endif //TENSOR_ITERATOR_HPP_
