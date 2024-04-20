@@ -18,6 +18,10 @@ int main(){
 	
 	std::cout << t2 << std::endl;
 
+	std::cout << t3.grad() << std::endl;
+
+	std::cout << "hey" << std::endl;
+
 	t2.backward();
 
 	std::cout << t2.grad() << std::endl;
@@ -25,5 +29,4 @@ int main(){
 
 	return 0;
 }
-
 

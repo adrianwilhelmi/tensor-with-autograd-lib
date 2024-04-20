@@ -19,6 +19,7 @@ namespace tensor{
 		d.compute_strides();
 		Storage<T> elems(d.size);
 		tensor_impl::fill_data<T,N>(init, elems, d, 0, 0);
+
 		return{d, elems, req_grad};
 	}
 

@@ -35,7 +35,6 @@ public:
 		this->req_grad_ = false;
 		this->desc_ = x.desc_;
 		this->elems_ = x.elems_;
-		this->grads_ = x.grads_;
 
 		this->node = std::make_shared<Node<T>>(*this);
 		this->node->grad_fn = FunctionEmpty<T>{};
@@ -47,25 +46,12 @@ public:
 			this->req_grad_ = x.req_grad_;
 			this->desc_ = x.desc_;
 			x.elems_.share(this->elems_);
-			if(x.req_grad_){
-				x.grads_.share(this->grads_);
-			}
 
 			this->node = std::make_shared<Node<T>>(*this);
 			this->node->grad_fn = FunctionId<T>{};
-			this->node.set_inputs(x);
+			this->node->set_inputs(x);
 		}
 		return*this;
-	}
-
-	Tensor(const TensorSlice&d, Storage<T>&e, 
-			Storage<T>&g, bool req_grad = false)
-			: desc_(d), req_grad_(req_grad){
-		e.share(this->elems_);
-		g.share(this->grads_);
-		
-		this->node = std::make_shared<Node<T>>(*this);
-		this->node->grad_fn = FunctionEmpty<T>{};
 	}
 
 	Tensor(const TensorSlice& d, Storage<T>&e, bool req_grad = false) : desc_(d){
@@ -103,8 +89,11 @@ public:
 		m.req_grad_ = this->req_grad_;
 		m.desc_ = this->desc_;
 		this->elems_.share(m.elems_);
-		if(m.req_grad_){
-			this->grads_.share(m.grads_);
+	}
+
+	void fill(const T val){
+		for(auto& elem : *this){
+			elem = val;
 		}
 	}
 
@@ -442,28 +431,25 @@ public:
 	}
 
 	void init_grad(){
-		this->grads_.reset(elems_.size());
-		this->grads_.fill(T(0));
+		if(node){
+			this->node->init_grad();
+		}
 	}
 
-	Tensor<T> grad(){
-		assert(this->req_grad_ == true);
-		return{this->desc_, this->grads_};
+	Tensor<T>& grad(){
+		return this->node->grad;
 	}
 
-	const Tensor<T> grad() const{
-		assert(this->req_grad_ == true);
-		return{this->desc_, this->grads_};
+	const Tensor<T>& grad() const{
+		return this->node->grad;
 	}
 
-	Tensor<T> grad(TensorSlice d){
-		assert(this->req_grad_ == true);
-		return{d, this->grads_};
+	Tensor<T>& grad(TensorSlice d){
+		return this->node->grad(d);
 	}
 
-	const Tensor<T> grad(TensorSlice d) const{
-		assert(this->req_grad_ == true);
-		return{d, this->grads_};
+	const Tensor<T>& grad(TensorSlice d) const{
+		return this->node->grad(d);
 	}
 
 	/*
@@ -480,15 +466,15 @@ public:
 	}
 
 	void backward(){
-		if(grads_.size() == 0){
+		if(this->node->grad.size() == 0){
 			this->init_grad();
 		}
-		this->grads_.fill(T{1});
+		this->node->grad.fill(T{1});
 		this->node->backward();
 		//backward(this->grad());
 	}
 
-	void set_node(const std::shared_ptr<Node<T>> n){
+	void set_node(const std::shared_ptr<Node<T>>& n){
 		this->node = n;
 	}
 
@@ -502,11 +488,9 @@ public:
 private:
 	TensorSlice desc_;
 	Storage<T> elems_;
-	Storage<T> grads_;
 	std::shared_ptr<Node<T>> node;
 	bool req_grad_;
 };
-
 
 template<typename T>
 template<typename U>
@@ -540,7 +524,6 @@ template<typename... Exts>
 Tensor<T>::Tensor(Exts... exts)
 	: desc_{exts...},
 	elems_(desc_.size),
-	grads_(),
 	req_grad_(false){
 
 	this->node = std::make_shared<Node<T>>(*this);

@@ -9,11 +9,12 @@
 #include<variant>
 #include<vector>
 #include<functional>
+#include<iostream>
 
 template<typename Derived, typename T>
 class Function{
 public:
-	void backward(Tensor<T> grad, node_vector<T>& inputs){
+	void backward(Tensor<T>& grad, node_vector<T>& inputs){
 		//CRTP
 		static_cast<Derived*>(this)->backward_impl(grad, inputs);
 	}
@@ -25,7 +26,7 @@ private:
 template<typename T>
 class FunctionEmpty{
 public:
-	void backward(Tensor<T>/*grad*/, node_vector<T>& /*inputs*/) const{}
+	void backward(Tensor<T>& /*grad*/, node_vector<T>& /*inputs*/) const{}
 };
 
 template<typename T>
@@ -33,12 +34,11 @@ class FunctionId : public Function<FunctionId<T>, T>{
 public:
 	using Function<FunctionId<T>,T>::Function;
  
-	void backward_impl(Tensor<T> grad, node_vector<T>& inputs){
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		for(auto&node_ptr : inputs){
-			if(node_ptr->data.requires_grad()){
-				node_ptr->data.grad(grad.descriptor()) += grad;
-				node_ptr->backward();
-			}
+			std::cout << grad << std::endl;
+			node_ptr->grad(grad.descriptor()) += grad;
+			node_ptr->backward();
 		}
 	}
 };
