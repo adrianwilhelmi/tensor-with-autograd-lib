@@ -51,9 +51,6 @@ TEST(TensorTest, Dimslice){
 	//t1.share(t2);
 	t2 = t1.dimslice(1, 1);
 
-	std::cout << t1 << std::endl;
-	std::cout << t2 << std::endl;
-
 	ASSERT_EQ(t1.dimslice(1,1).size(), t2.size());
 	ASSERT_EQ(t1.dimslice(1,1).extent(0), t2.extent(0));
 	ASSERT_EQ(t1.dimslice(1,1).order(), t2.order());

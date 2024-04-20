@@ -124,7 +124,7 @@ public:
 	}
 
 	void reset(std::size_t new_size){
-		this->data_ = std::make_shared<T[]>(new_size);
+		this->data_ = std::shared_ptr<T[]>(new T[new_size], std::default_delete<T[]>());
 		size_ = new_size;
 	}
 	

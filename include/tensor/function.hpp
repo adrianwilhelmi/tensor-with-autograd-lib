@@ -1,7 +1,9 @@
 #ifndef FUNCTION_HPP_
 #define FUNCTION_HPP_
 
+#include"declarations.hpp"
 #include"tensor.hpp"
+#include"node.hpp"
 
 #include<variant>
 #include<vector>
@@ -10,29 +12,34 @@
 template<typename Derived, typename T>
 class Function{
 public:
-	Function(std::reference_wrapper<Tensor<T>> a,
-			std::reference_wrapper<Tensor<T>> b)
-		: a(a), b(b){
-		if(a.get().requires_grad()) a.get().init_grad();
-		if(b.get().requires_grad()) b.get().init_grad();
-	}
-
-	void backward(const Tensor<T>& grad){
+	void backward(const Tensor<T>& grad, node_vector<T>& inputs){
 		//CRTP
-		static_cast<Derived*>(this)->backward_impl(grad);
+		static_cast<Derived*>(this)->backward_impl(grad, inputs);
 	}
-
-protected:
-	std::reference_wrapper<Tensor<T>> a;
-	std::reference_wrapper<Tensor<T>> b;
+	
 private:
 	friend Derived;
 };
 
+template<typename T>
 class FunctionEmpty{
 public:
-	template<typename T>
-	void backward(const Tensor<T>&/*grad*/){}
+	void backward(const Tensor<T>&/*grad*/, node_vector<T>/*inputs*/){}
+};
+
+template<typename T>
+class FunctionId : public Function<FunctionId<T>, T>{
+public:
+	using Function<FunctionId<T>,T>::Function;
+ 
+	void backward_impl(const Tensor<T>& grad, node_vector<T>& inputs){
+		for(auto&node_ptr : inputs){
+			if(node_ptr->data.requires_grad()){
+				node_ptr->data.grad(grad.descriptor()) += grad;
+				node_ptr->backward();
+			}
+		}
+	}
 };
 
 template<typename T>
@@ -40,15 +47,14 @@ class FunctionMul : public Function<FunctionMul<T>, T>{
 public:
 	using Function<FunctionMul<T>,T>::Function;
 
-	void backward_impl(const Tensor<T>& grad){
-		if(this->a.get().requires_grad()) {
-			this->a.get().grad() += this->b.get() * grad;
-			this->a.get().backward_();
+	void backward_impl(const Tensor<T>& grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			inputs[0]->data.grad() += inputs[1]->data * grad;
+			inputs[0]->backward();
 		}
-
-		if(this->b.get().requires_grad()) {
-			this->b.get().grad() += this->a.get() * grad;
-			this->b.get().backward_();
+		if(inputs[1]->data.requires_grad()){
+			inputs[1]->data.grad() += inputs[0]->data * grad;
+			inputs[1]->backward();
 		}
 	}
 };
@@ -58,15 +64,14 @@ class FunctionAdd : public Function<FunctionAdd<T>, T>{
 public:
 	using Function<FunctionAdd<T>,T>::Function;
 
-	void backward_impl(const Tensor<T>& grad){
-		if(this->a.get().requires_grad()) {
-			this->a.get().grad() += grad;
-			this->a.get().backward_();
+	void backward_impl(const Tensor<T>& grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			inputs[0]->data.grad() += grad;
+			inputs[0]->backward();
 		}
-
-		if(this->b.get().requires_grad()) {
-			this->b.get().grad() += grad;
-			this->b.get().backward_();
+		if(inputs[1]->data.requires_grad()){
+			inputs[1]->data.grad() += grad;
+			inputs[1]->backward();
 		}
 	}
 };
@@ -76,10 +81,10 @@ class FunctionNeg : public Function<FunctionNeg<T>, T>{
 public:
 	using Function<FunctionNeg<T>,T>::Function;
 
-	void backward_impl(const Tensor<T>&grad){
-		if(this->a.get().requires_grad()) {
-			this->a.get().grad() -= grad;
-			this->a.get().backward_();
+	void backward_impl(const Tensor<T>&grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			inputs[0]->data.grad() -= grad;
+			inputs[0]->backward();
 		}
 	}
 };
@@ -89,15 +94,15 @@ class FunctionSub : public Function<FunctionSub<T>, T>{
 public:
 	using Function<FunctionSub<T>,T>::Function;
 
-	void backward_impl(const Tensor<T>&grad){
-		if(this->a.get().requires_grad()) {
-			this->a.get().grad() += grad;
-			this->a.get().backward_();
+	void backward_impl(const Tensor<T>&grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			inputs[0]->data.grad() += grad;
+			inputs[0]->backward();
 		}
 
-		if(this->b.get().requires_grad()) {
-			this->b.get().grad() -= grad;
-			this->b.get().backward_();
+		if(inputs[1]->data.requires_grad()){
+			inputs[1]->data.grad() -= grad;
+			inputs[1]->backward();
 		}
 	}
 };
@@ -107,17 +112,18 @@ class FunctionDiv : public Function<FunctionDiv<T>, T>{
 public:
 	using Function<FunctionDiv<T>,T>::Function;
 
-	void backward_impl(const Tensor<T>&grad){
-		if(this->a.get().requires_grad()) {
-			this->a.get().grad() += this->b.get().pow(T(-1)) * grad;
-			this->a.get().backward_();
+	void backward_impl(const Tensor<T>&grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			inputs[0]->data.grad() += inputs[1]->data.pow(T(-1)) * grad;
+			inputs[0]->backward();
 		}
 
-		if(this->b.get().requires_grad()) {
-			auto temp = this->b.get().pow(T(-2));
-			temp *= this->a.get();
-			this->b.get().grad() -= temp * grad;
-			this->b.get().backward_();
+		if(inputs[1]->data.requires_grad()){
+			auto temp = inputs[1]->data.pow(T(-2));
+			temp *= inputs[0]->data;
+			inputs[1]->data.grad() -= temp * grad;
+
+			inputs[1]->backward();
 		}
 	}
 };
@@ -127,18 +133,18 @@ class FunctionPow : public Function<FunctionPow<T>, T>{
 public:
 	using Function<FunctionPow<T>,T>::Function;
 
-	void backward_impl(const Tensor<T>&grad){
-		if(this->a.get().requires_grad()) {
-			auto t1 = this->b.get() - (T)(1);
-			auto t2 = this->a.get().pow_(t1);
-			this->a.get().grad() += this->b.get() * t2 * grad;
-			this->a.get().backward_();
+	void backward_impl(const Tensor<T>&grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			auto t1 = inputs[1] - (T)(1);
+			auto t2 = inputs[0].pow_(t1);
+			inputs[0]->data.grad() += inputs[1] * t2 * grad;
+			inputs[0]->backward();
 		}
-		if(this->b.get().requires_grad()){
-			auto temp = this->a.get().pow(this->b.get());
-			temp *= this->a.get().log();
-			this->b.get().grad() += temp * grad;
-			this->b.get().backward_();
+		if(inputs[1]->data.requires_grad()){
+			auto temp = inputs[0]->data.pow(inputs[1]);
+			temp *= inputs[0]->data.log();
+			inputs[1]->data.grad() += temp * grad;
+			inputs[1]->backward();
 		}
 	}
 };
@@ -148,10 +154,10 @@ class FunctionLog : public Function<FunctionLog<T>, T>{
 public:
 	using Function<FunctionLog<T>,T>::Function;
 
-	void backward_impl(const Tensor<T>&grad){
-		if(this->a.get().requires_grad()) {
-			this->a.get().grad() += this->b.get().pow(T(-1)) * grad;
-			this->a.get().backward_();
+	void backward_impl(const Tensor<T>&grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			inputs[0]->data.grad() += inputs[1]->data.pow(T(-1)) * grad;
+			inputs[0]->backward();
 		}
 	}
 };
@@ -161,10 +167,10 @@ class FunctionExp : public Function<FunctionExp<T>, T>{
 public:
 	using Function<FunctionExp<T>,T>::Function;
 
-	void backward_impl(const Tensor<T>&grad){
-		if(this->a.get().requires_grad()) {
-			this->a.get().grad() += this->b.get() * grad;
-			this->a.get().backward_();
+	void backward_impl(const Tensor<T>&grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			inputs[0]->data.grad() += inputs[1]->data * grad;
+			inputs[0]->backward();
 		}
 	}
 };
@@ -174,27 +180,27 @@ class FunctionRelu : public Function<FunctionRelu<T>, T>{
 public:
 	using Function<FunctionRelu<T>,T>::Function;
 
-	void backward_impl(const Tensor<T>&grad){
-		if(this->a.get().requires_grad()) {
-			auto temp = this->a.get().pow(0);
-			this->a.get().grad() += this->b.get() * grad;
-			this->a.get().backward_();
+	void backward_impl(const Tensor<T>&grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			//NOT FINISHED
+			//auto temp = inputs[0]->data > T(0);
+			inputs[0]->data.grad() += inputs[1]->data * grad;
+			inputs[0]->backward();
 		}
 	}
 };
-
 
 template<typename T>
 class FunctionTanh : public Function<FunctionTanh<T>, T>{
 public:
 	using Function<FunctionTanh<T>,T>::Function;
 
-	void backward_impl(const Tensor<T>&grad){
-		if(this->a.get().requires_grad()) {
-			Tensor<T> t1 = -this->b.get().pow(2);
+	void backward_impl(const Tensor<T>&grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			Tensor<T> t1 = -inputs[1]->data.pow(2);
 			t1 += 1;
-			this->a.get().grad() += t1 * grad;
-			this->a.get().backward_();
+			inputs[0]->data.grad() += t1 * grad;
+			inputs[0]->backward();
 		}
 	}
 };
@@ -204,43 +210,29 @@ class FunctionSigmoid : public Function<FunctionSigmoid<T>, T>{
 public:
 	using Function<FunctionSigmoid<T>,T>::Function;
 
-	void backward_impl(const Tensor<T>&grad){
-		if(this->a.get().requires_grad()) {
-			auto temp = this->b.get() - T(1);
-			this->a.get().grad() += this->b.get() * temp * grad;
-			this->a.get().backward_();
+	void backward_impl(const Tensor<T>&grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			auto temp = inputs[1]->data - T(1);
+			inputs[0]->data.grad() += inputs[1]->data * temp * grad;
+			inputs[0]->backward();
 		}
 	}
 };
 
-template<typename T>
-using func_variant = std::variant<
-	FunctionEmpty,
-	FunctionAdd<T>,
-	FunctionMul<T>,
-	FunctionNeg<T>,
-	FunctionSub<T>,
-	FunctionDiv<T>,
-	FunctionPow<T>,
-	FunctionLog<T>,
-	FunctionExp<T>,
-	FunctionRelu<T>,
-	FunctionTanh<T>,
-	FunctionSigmoid<T>
->;
+namespace function{
+	template<typename T>
+	bool same_type(const func_variant<T>& f1, const func_variant<T>& f2){
+		return std::visit([](auto&&arg1, auto&&arg2){
+			return typeid(arg1) == typeid(arg2);
+		}, f1, f2);
+	}
 
-template<typename T>
-bool same_func_type(const func_variant<T>& f1, const func_variant<T>& f2){
-	return std::visit([](auto&&arg1, auto&&arg2){
-		return typeid(arg1) == typeid(arg2);
-	}, f1, f2);
-}
-
-template<typename T>
-bool is_func_type(const func_variant<T>& fv, const std::type_info& type_info){
-	return std::visit([&type_info](const auto&arg){
-		return typeid(arg) == type_info;
-	}, fv);
-}
+	template<typename T>
+	bool is_type(const func_variant<T>& fv, const std::type_info& type_info){
+		return std::visit([&type_info](const auto&arg){
+			return typeid(arg) == type_info;
+		}, fv);
+	}
+};
 
 #endif
