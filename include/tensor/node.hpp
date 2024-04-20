@@ -19,26 +19,6 @@ struct Node{
 		res.share(this->data);
 	}
 
-	/*
-	Node(Tensor<T>& res, func_variant<T>& fn){
-		res.share(this->data);
-		this->grad_fn = fn;
-	}
-
-	template<typename... Args>
-	Node(Args&... args, Tensor<T>& res, func_variant<T>& fn){
-		([&]{
-			if(args.requires_grad()){
-				args.init_grad();
-			}
-			inputs.push_back(args.get_node());
-		}(), ...);
-
-		res.share(this->data);
-		this->grad_fn = fn;
-	}
-	*/
-
 	template<typename... Args>
 	Enable_if<All(Tensor_type<Args>()...), void>
 	set_inputs(Args&... args){
