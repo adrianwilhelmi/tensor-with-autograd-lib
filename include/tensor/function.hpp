@@ -212,8 +212,9 @@ public:
 
 	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
-			auto temp = inputs[1]->data - T(1);
-			inputs[0]->grads += inputs[1]->data * temp * grad;
+			auto temp = inputs[0]->data.sigmoid();
+
+			inputs[0]->grads += temp * (T(1) - temp) * grad;
 			inputs[0]->backward();
 		}
 	}

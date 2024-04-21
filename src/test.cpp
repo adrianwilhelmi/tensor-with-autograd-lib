@@ -31,9 +31,9 @@ int main(){
 	Tensor<double> t6 = t4 - t5;
 
 	Tensor<double> t7 = tensor::from_list<double,2>({
-		{2, 2, 2},
-		{2, 2, 2},
-		{2, 2, 2},
+		{20, 20, 20},
+		{2, 500, 2},
+		{2, 500, 2},
 		{2, 2, 2}
 	}, true);
 
@@ -45,14 +45,18 @@ int main(){
 
 	std::cout << t9 << std::endl;
 
-	t9.backward();
+	Tensor<double> t10 = t9.sigmoid();
 
+	t10.backward();
+
+	std::cout << t10.grad() << std::endl;
 	std::cout << t9.grad() << std::endl;
 	std::cout << t8.grad() << std::endl;
 	std::cout << t7.grad() << std::endl;
 	std::cout << t6.grad() << std::endl;
 	std::cout << t5.grad() << std::endl;
 	std::cout << t2.grad() << std::endl;
+
 
 	return 0;
 }

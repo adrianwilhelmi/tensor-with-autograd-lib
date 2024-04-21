@@ -350,28 +350,39 @@ public:
 	Tensor<U> convert() const{
 		Storage<U> s = this->elems_.convert();
 		TensorSlice d = this->desc_;
+		Tensor<T> res(d, s);
 		if(this->req_grad_){
-			Storage<U> g = this->grads_.convert();
-			return {d, s, g};
+			res.enable_grad();
+			auto n = std::make_shared<Node<T>>(res);
+			func_variant<T> fn = FunctionId<T>{};
+			n->grad_fn = fn;
+			res.set_node(n);
 		}
-		return {d, s};
+		return res;
 	}
 
 	//funcs
 	Tensor<T> pow(Tensor<T>& exps){
+		assert(same_extents(this->desc_, exps.descriptor()) 
+				|| exps.order() == 0);
+
 		Tensor<T> res(*this);
 		for(auto i = res.begin(), j = exps.begin(); i != res.end(); ++i, ++j)
 			*i = std::pow(*i, *j);
 
-		func_variant<T> fn = FunctionPow<T>{};
-		auto n = std::make_shared<Node<T>>(res);
-		n->grad_fn = fn;
-		n->set_inputs(*this, exps);
+		if(this->req_grad_){
+			res.enable_grad();
+			func_variant<T> fn = FunctionPow<T>{};
+			auto n = std::make_shared<Node<T>>(res);
+			n->grad_fn = fn;
+			n->set_inputs(*this, exps);
 
-		res.set_node(n);
+			res.set_node(n);
+		}
 
 		return res;
 	}
+
 	Tensor<T> pow(const T exp) const{
 		Tensor<T> res(*this);
 		res.apply([&](T& a) {a = std::pow(a, exp);});
@@ -382,12 +393,15 @@ public:
 		Tensor<T> res(*this);
 		res.apply([&](T& a) {a = std::log(a);});
 
-		func_variant<T> fn = FunctionLog<T>{};
-		auto n = std::make_shared<Node<T>>(res);
-		n->grad_fn = fn;
-		n->set_inputs(*this, res);
+		if(this->req_grad_){
+			res.enable_grad();
+			func_variant<T> fn = FunctionLog<T>{};
+			auto n = std::make_shared<Node<T>>(res);
+			n->grad_fn = fn;
+			n->set_inputs(*this);
 
-		res.set_node(n);
+			res.set_node(n);
+		}
 		
 		return res;
 	}
@@ -396,12 +410,15 @@ public:
 		Tensor<T> res(*this);
 		res.apply([&](T& a) {a = std::exp(a);});
 
-		func_variant<T> fn = FunctionExp<T>{};
-		auto n = std::make_shared<Node<T>>(res);
-		n->grad_fn = fn;
-		n->set_inputs(*this, res);
+		if(this->req_grad_){
+			res.enable_grad();
+			func_variant<T> fn = FunctionExp<T>{};
+			auto n = std::make_shared<Node<T>>(res);
+			n->grad_fn = fn;
+			n->set_inputs(*this);
 
-		res.set_node(n);
+			res.set_node(n);
+		}
 
 		return res;
 	}
@@ -410,12 +427,60 @@ public:
 		Tensor<T> res(*this);
 		res.apply([&](T& a) {a = tensor_impl::relu<T>(a);});
 
-		func_variant<T> fn = FunctionRelu<T>{};
-		auto n = std::make_shared<Node<T>>(res);
-		n->grad_fn = fn;
-		n->set_inputs(*this, res);
+		if(this->req_grad_){
+			res.enable_grad();
+			func_variant<T> fn = FunctionRelu<T>{};
+			auto n = std::make_shared<Node<T>>(res);
+			n->grad_fn = fn;
+			n->set_inputs(*this);
 
-		res.set_node(n);
+			res.set_node(n);
+		}
+
+		return res;
+	}
+
+	Tensor<T> tanh() const{
+		Tensor<T> res(*this);
+		res.apply([&](T& a) {a = tensor_impl::tanh<T>(a);});
+
+		if(this->req_grad_){
+			res.enable_grad();
+			func_variant<T> fn = FunctionTanh<T>{};
+			auto n = std::make_shared<Node<T>>(res);
+			n->grad_fn = fn;
+			n->set_inputs(*this);
+
+			res.set_node(n);
+		}
+
+		return res;
+	}
+
+	Tensor<T> sigmoid() {
+		Tensor<T> res(*this);
+		res.apply([&](T& a) {a = tensor_impl::sigmoid<T>(a);});
+
+		if(this->req_grad_){
+			res.enable_grad();
+			func_variant<T> fn = FunctionSigmoid<T>{};
+			auto n = std::make_shared<Node<T>>(res);
+			n->grad_fn = fn;
+			n->set_inputs(*this);
+
+			res.set_node(n);
+		}
+
+		return res;
+	}
+
+
+	Tensor<T> softmax() const{
+		Tensor<T> res(*this);
+		T max = res.max();
+		res.apply([&](T& a) {a = std::exp(a - max);});
+		T sum = res.sum();
+		res.apply([&](T&a) {a /= sum;});
 
 		return res;
 	}
@@ -426,6 +491,30 @@ public:
 		for(auto i = begin(), j = exps.begin(); i != end(); ++i, ++j)
 			*i = std::pow(*i, *j);
 		return*this;
+	}
+	Tensor<T>& pow_(T exp){
+		return apply([&](T&a) {a = std::pow(a, exp);});
+	}
+	Tensor<T>& log_(T exp){
+		return apply([&](T&a) {a = std::log(a);});
+	}
+	Tensor<T>& exp_(){
+		return apply([&](T&a) {a = std::exp(a);});
+	}
+	Tensor<T>& relu_(){
+		return apply([&](T& a) {a = tensor_impl::relu<T>(a);});
+	}
+	Tensor<T>& tanh_(){
+		return apply([&](T& a) {a = tensor_impl::tanh<T>(a);});
+	}
+	Tensor<T>& sigmoid_(){
+		return apply([&](T& a) {a = tensor_impl::sigmoid<T>(a);});
+	}
+	Tensor<T>& softmax_(){
+		T max = this->max();
+		this->apply([&](T&a) {a = std::exp(a - max);});
+		T sum = this->sum();
+		return apply([&](T&a) {a /= sum;});
 	}
 
 	

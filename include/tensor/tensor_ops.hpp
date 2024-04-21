@@ -68,7 +68,7 @@ Tensor<T> operator-(const Tensor<T>&m, const T&val){
 
 template<typename T>
 Tensor<T> operator-(const T&val, const Tensor<T>&m){
-	Tensor<T> res = -m;
+	Tensor<T> res = m * T(-1);
 	res += val;
 	return res;
 }
@@ -197,7 +197,6 @@ inline Tensor<T> operator/(Tensor<T>& a, Tensor<T>& b){
 
 	if(a.requires_grad() || b.requires_grad()){
 		res.enable_grad();
-		std::cout << "hello" << std::endl;
 		func_variant<T> fn = FunctionDiv<T>{};
 		auto n = std::make_shared<Node<T>>(res);
 		n->grad_fn = fn;
