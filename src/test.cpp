@@ -21,8 +21,14 @@ int main(){
 
 	std::cout << t << std::endl;
 
-	t.backward();
-	std::cout << t2.grad() << std::endl;
+	t.dimslices_arange(0, 4, 7) = t2;
+	t.dimslices_arange(0, 0, 4) = t2;
+
+	std::cout << t << std::endl;
+
+	t.dimslices_arange(0, 0, 4) += 200;
+
+	std::cout << t << std::endl;
 
 
 	/*
