@@ -121,12 +121,14 @@ inline Tensor<T> operator+(Tensor<T>& a, Tensor<T>& b){
 	Tensor<T> res = a;
 	res += b;
 
-	func_variant<T> fn = FunctionAdd<T>{};
-	auto n = std::make_shared<Node<T>>(res);
-	n->grad_fn = fn;
-	n->set_inputs(a, b);
+	if(a.requires_grad() || b.requires_grad()){
+		func_variant<T> fn = FunctionAdd<T>{};
+		auto n = std::make_shared<Node<T>>(res);
+		n->grad_fn = fn;
+		n->set_inputs(a, b);
 
-	res.set_node(n);
+		res.set_node(n);
+	}
 
 	return res;
 }
@@ -143,12 +145,15 @@ inline Tensor<T> operator-(Tensor<T>& a, Tensor<T>& b){
 	Tensor<T> res = a;
 	res -= b;
 
-	func_variant<T> fn = FunctionSub<T>{};
-	auto n = std::make_shared<Node<T>>(res);
-	n->grad_fn = fn;
-	n->set_inputs(a, b);
+	if(a.requires_grad() || b.requires_grad()){
+		res.enable_grad();
+		func_variant<T> fn = FunctionSub<T>{};
+		auto n = std::make_shared<Node<T>>(res);
+		n->grad_fn = fn;
+		n->set_inputs(a, b);
 
-	res.set_node(n);
+		res.set_node(n);
+	}
 
 	return res;
 }
@@ -165,12 +170,15 @@ inline Tensor<T> operator*(Tensor<T>& a, Tensor<T>& b){
 	Tensor<T> res = a;
 	res *= b;
 
-	func_variant<T> fn = FunctionMul<T>{};
-	auto n = std::make_shared<Node<T>>(res);
-	n->grad_fn = fn;
-	n->set_inputs(a, b);
+	if(a.requires_grad() || b.requires_grad()){
+		res.enable_grad();
+		func_variant<T> fn = FunctionMul<T>{};
+		auto n = std::make_shared<Node<T>>(res);
+		n->grad_fn = fn;
+		n->set_inputs(a, b);
 
-	res.set_node(n);
+		res.set_node(n);
+	}
 
 	return res;
 }
@@ -187,12 +195,16 @@ inline Tensor<T> operator/(Tensor<T>& a, Tensor<T>& b){
 	Tensor<T> res = a;
 	res /= b;
 
-	func_variant<T> fn = FunctionDiv<T>{};
-	auto n = std::make_shared<Node<T>>(res);
-	n->grad_fn = fn;
-	n->set_inputs(a, b);
+	if(a.requires_grad() || b.requires_grad()){
+		res.enable_grad();
+		std::cout << "hello" << std::endl;
+		func_variant<T> fn = FunctionDiv<T>{};
+		auto n = std::make_shared<Node<T>>(res);
+		n->grad_fn = fn;
+		n->set_inputs(a, b);
 
-	res.set_node(n);
+		res.set_node(n);
+	}
 
 	return res;
 }
@@ -204,6 +216,12 @@ inline Tensor<T> operator/(const Tensor<T>& a, const Tensor<T>& b){
 	return res;
 }
 
+template<typename T>
+inline Tensor<T> operator%(const Tensor<T>& a, const Tensor<T>& b){
+	Tensor<T> res = a;
+	res %= b;
+	return res;
+}
 
 #endif //TENSOR_OPS_OPP_
 

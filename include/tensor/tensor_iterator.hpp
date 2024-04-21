@@ -62,6 +62,10 @@ public:
 		return diff;
 	}
 
+	std::size_t size() const{
+		return this->desc.size;
+	}
+
 private:
 	void increment();
 	void decrement();

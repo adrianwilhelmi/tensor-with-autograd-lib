@@ -441,48 +441,44 @@ public:
 		}
 	}
 
-	void init_grad(){
-		if(node){
-			this->node->init_grad();
-		}
-	}
-
 	Tensor<T>& grad(){
+		if(!req_grad_ || !this->node){
+			throw std::runtime_error("grad is disabled");
+		}
 		return this->node->grads;
 	}
 
 	const Tensor<T>& grad() const{
+		if(!req_grad_ || !this->node){
+			throw std::runtime_error("grad is off");
+		}
 		return this->node->grads;
 	}
 
 	Tensor<T>& grad(TensorSlice d){
+		if(!req_grad_ || !this->node){
+			throw std::runtime_error("grad is off");
+		}
 		return this->node->grads(d);
 	}
 
 	const Tensor<T>& grad(TensorSlice d) const{
+		if(!req_grad_ || !this->node){
+			throw std::runtime_error("grad is off");
+		}
 		return this->node->grads(d);
 	}
 
-	/*
-	void backward(const Tensor<T>&grad){
-		std::visit([&grad](auto&f){
-			f.backward(grad);
-		}, grad_fn_);
-	}
-	*/	
-
 	void backward_(){
-		//backward(this->grad());
 		this->node->backward();
 	}
 
 	void backward(){
 		if(this->node->grads.size() == 0){
-			this->init_grad();
+			this->node->init_grad();
 		}
 		this->node->grads.fill(T{1});
 		this->node->backward();
-		//backward(this->grad());
 	}
 
 	void set_node(const std::shared_ptr<Node<T>>& n){
@@ -506,7 +502,7 @@ private:
 template<typename T>
 template<typename U>
 Tensor<T>::Tensor(const Tensor<U>&x)
-	: req_grad_(false){
+	: elems_(x.size()), req_grad_(false) {
 	static_assert(Convertible<U,T>(), "inconsistent types");
 	this->desc_ = x.descriptor();
 	std::copy(x.begin(), x.end(), this->begin());

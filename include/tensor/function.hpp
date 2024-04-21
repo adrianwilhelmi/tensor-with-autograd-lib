@@ -47,13 +47,13 @@ class FunctionMul : public Function<FunctionMul<T>, T>{
 public:
 	using Function<FunctionMul<T>,T>::Function;
 
-	void backward_impl(Tensor<T> grad, node_vector<T>& inputs){
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
-			inputs[0]->data.grad() += inputs[1]->data * grad;
+			inputs[0]->grads += inputs[1]->data * grad;
 			inputs[0]->backward();
 		}
 		if(inputs[1]->data.requires_grad()){
-			inputs[1]->data.grad() += inputs[0]->data * grad;
+			inputs[1]->grads += inputs[0]->data * grad;
 			inputs[1]->backward();
 		}
 	}
@@ -64,13 +64,13 @@ class FunctionAdd : public Function<FunctionAdd<T>, T>{
 public:
 	using Function<FunctionAdd<T>,T>::Function;
 
-	void backward_impl(Tensor<T> grad, node_vector<T>& inputs){
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
-			inputs[0]->data.grad() += grad;
+			inputs[0]->grads += grad;
 			inputs[0]->backward();
 		}
 		if(inputs[1]->data.requires_grad()){
-			inputs[1]->data.grad() += grad;
+			inputs[1]->grads += grad;
 			inputs[1]->backward();
 		}
 	}
@@ -81,9 +81,9 @@ class FunctionNeg : public Function<FunctionNeg<T>, T>{
 public:
 	using Function<FunctionNeg<T>,T>::Function;
 
-	void backward_impl(Tensor<T> grad, node_vector<T>& inputs){
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
-			inputs[0]->data.grad() -= grad;
+			inputs[0]->grads -= grad;
 			inputs[0]->backward();
 		}
 	}
@@ -94,14 +94,14 @@ class FunctionSub : public Function<FunctionSub<T>, T>{
 public:
 	using Function<FunctionSub<T>,T>::Function;
 
-	void backward_impl(Tensor<T> grad, node_vector<T>& inputs){
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
-			inputs[0]->data.grad() += grad;
+			inputs[0]->grads += grad;
 			inputs[0]->backward();
 		}
 
 		if(inputs[1]->data.requires_grad()){
-			inputs[1]->data.grad() -= grad;
+			inputs[1]->grads -= grad;
 			inputs[1]->backward();
 		}
 	}
@@ -112,16 +112,16 @@ class FunctionDiv : public Function<FunctionDiv<T>, T>{
 public:
 	using Function<FunctionDiv<T>,T>::Function;
 
-	void backward_impl(Tensor<T> grad, node_vector<T>& inputs){
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
-			inputs[0]->data.grad() += inputs[1]->data.pow(T(-1)) * grad;
+			inputs[0]->grads += inputs[1]->data.pow(T(-1)) * grad;
 			inputs[0]->backward();
 		}
 
 		if(inputs[1]->data.requires_grad()){
 			auto temp = inputs[1]->data.pow(T(-2));
 			temp *= inputs[0]->data;
-			inputs[1]->data.grad() -= temp * grad;
+			inputs[1]->grads -= temp * grad;
 
 			inputs[1]->backward();
 		}
@@ -133,17 +133,17 @@ class FunctionPow : public Function<FunctionPow<T>, T>{
 public:
 	using Function<FunctionPow<T>,T>::Function;
 
-	void backward_impl(Tensor<T> grad, node_vector<T>& inputs){
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
 			auto t1 = inputs[1]->data - (T)(1);
 			auto t2 = inputs[0]->data.pow_(t1);
-			inputs[0]->data.grad() += inputs[1]->data * t2 * grad;
+			inputs[0]->grads += inputs[1]->data * t2 * grad;
 			inputs[0]->backward();
 		}
 		if(inputs[1]->data.requires_grad()){
 			auto temp = inputs[0]->data.pow(inputs[1]->data);
 			temp *= inputs[0]->data.log();
-			inputs[1]->data.grad() += temp * grad;
+			inputs[1]->grads += temp * grad;
 			inputs[1]->backward();
 		}
 	}
@@ -154,9 +154,9 @@ class FunctionLog : public Function<FunctionLog<T>, T>{
 public:
 	using Function<FunctionLog<T>,T>::Function;
 
-	void backward_impl(Tensor<T> grad, node_vector<T>& inputs){
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
-			inputs[0]->data.grad() += inputs[1]->data.pow(T(-1)) * grad;
+			inputs[0]->grads += inputs[1]->data.pow(T(-1)) * grad;
 			inputs[0]->backward();
 		}
 	}
@@ -167,9 +167,9 @@ class FunctionExp : public Function<FunctionExp<T>, T>{
 public:
 	using Function<FunctionExp<T>,T>::Function;
 
-	void backward_impl(Tensor<T> grad, node_vector<T>& inputs){
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
-			inputs[0]->data.grad() += inputs[1]->data * grad;
+			inputs[0]->grads += inputs[1]->data * grad;
 			inputs[0]->backward();
 		}
 	}
@@ -180,11 +180,11 @@ class FunctionRelu : public Function<FunctionRelu<T>, T>{
 public:
 	using Function<FunctionRelu<T>,T>::Function;
 
-	void backward_impl(Tensor<T> grad, node_vector<T>& inputs){
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
 			//NOT FINISHED
 			//auto temp = inputs[0]->data > T(0);
-			inputs[0]->data.grad() += inputs[1]->data * grad;
+			inputs[0]->grads += inputs[1]->data * grad;
 			inputs[0]->backward();
 		}
 	}
@@ -195,11 +195,11 @@ class FunctionTanh : public Function<FunctionTanh<T>, T>{
 public:
 	using Function<FunctionTanh<T>,T>::Function;
 
-	void backward_impl(Tensor<T> grad, node_vector<T>& inputs){
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
 			Tensor<T> t1 = -inputs[1]->data.pow(2);
 			t1 += 1;
-			inputs[0]->data.grad() += t1 * grad;
+			inputs[0]->grads += t1 * grad;
 			inputs[0]->backward();
 		}
 	}
@@ -210,10 +210,10 @@ class FunctionSigmoid : public Function<FunctionSigmoid<T>, T>{
 public:
 	using Function<FunctionSigmoid<T>,T>::Function;
 
-	void backward_impl(Tensor<T> grad, node_vector<T>& inputs){
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
 			auto temp = inputs[1]->data - T(1);
-			inputs[0]->data.grad() += inputs[1]->data * temp * grad;
+			inputs[0]->grads += inputs[1]->data * temp * grad;
 			inputs[0]->backward();
 		}
 	}
