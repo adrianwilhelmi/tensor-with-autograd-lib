@@ -20,7 +20,11 @@ namespace tensor{
 		Storage<T> elems(d.size);
 		tensor_impl::fill_data<T,N>(init, elems, d, 0, 0);
 
-		return{d, elems, req_grad};
+		Tensor<T> res(d, elems);
+		if(req_grad){
+			res.enable_grad();
+		}
+		return res;
 	}
 
 }; //namespace tensor

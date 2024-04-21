@@ -8,9 +8,7 @@ int main(){
 		{15, 44, 3},
 		{31, 12, 3},
 		{4, 4, 2}
-	});
-
-	t3.enable_grad();
+	}, true);
 
 	std::cout << t3 << std::endl;
 

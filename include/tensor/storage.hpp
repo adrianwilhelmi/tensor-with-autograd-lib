@@ -35,7 +35,7 @@ public:
 	Storage() : size_(0) {}
 
 	explicit Storage(std::size_t n) 
-		: data_(new T[n], std::default_delete<T[]>()), size_(n) {}
+		: data_(new T[n](), std::default_delete<T[]>()), size_(n) {}
 
 	Storage(const Storage& other) : size_(other.size_){
 		if(other.data_){

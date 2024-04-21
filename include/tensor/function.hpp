@@ -36,8 +36,7 @@ public:
  
 	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		for(auto&node_ptr : inputs){
-			std::cout << grad << std::endl;
-			node_ptr->grad(grad.descriptor()) += grad;
+			node_ptr->grads(grad.descriptor()) += grad;
 			node_ptr->backward();
 		}
 	}
