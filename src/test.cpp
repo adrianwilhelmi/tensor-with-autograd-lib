@@ -21,6 +21,10 @@ int main(){
 
 	std::cout << t << std::endl;
 
+	t.backward();
+	std::cout << t2.grad() << std::endl;
+
+
 	/*
 	Tensor<double> t4 = t2 * t3;
 

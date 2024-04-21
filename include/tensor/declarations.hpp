@@ -22,6 +22,8 @@ class FunctionEmpty;
 template<typename T>
 class FunctionId;
 template<typename T>
+class FunctionConcat;
+template<typename T>
 class FunctionAdd;
 template<typename T>
 class FunctionMul;
@@ -48,6 +50,7 @@ template<typename T>
 using func_variant = std::variant<
 	FunctionEmpty<T>,
 	FunctionId<T>,
+	FunctionConcat<T>,
 	FunctionAdd<T>,
 	FunctionMul<T>,
 	FunctionNeg<T>,

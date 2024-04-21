@@ -36,11 +36,29 @@ public:
  
 	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		for(auto&node_ptr : inputs){
-			node_ptr->grads(grad.descriptor()) += grad;
-			node_ptr->backward();
+			if(node_ptr->data.requires_grad()){
+				node_ptr->grads(grad.descriptor()) += grad;
+				node_ptr->backward();
+			}
 		}
 	}
 };
+
+template<typename T>
+class FunctionConcat : public Function<FunctionConcat<T>, T>{
+public:
+	using Function<FunctionConcat<T>,T>::Function;
+ 
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
+		for(auto&node_ptr : inputs){
+			if(node_ptr->data.requires_grad()){
+				node_ptr->grads += grad(node_ptr->grads.descriptor());
+				node_ptr->backward();
+			}
+		}
+	}
+};
+
 
 template<typename T>
 class FunctionMul : public Function<FunctionMul<T>, T>{

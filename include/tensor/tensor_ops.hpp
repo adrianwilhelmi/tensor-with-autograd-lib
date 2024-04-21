@@ -53,7 +53,7 @@ namespace tensor{
 		}
 
 		if(t1.requires_grad() || t2.requires_grad()){
-			func_variant<T> fn = FunctionId<T>{};
+			func_variant<T> fn = FunctionConcat<T>{};
 			auto n = std::make_shared<Node<T>>(res);
 			n->grad_fn = fn;
 			n->set_inputs(t1, t2);
