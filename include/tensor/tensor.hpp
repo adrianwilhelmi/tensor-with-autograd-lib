@@ -63,7 +63,6 @@ public:
 	Tensor(const TensorSlice& d)
 		: desc_(d), elems_(d.size), 
 		req_grad_(false) {
-		
 		this->node = nullptr;
 	}
 
@@ -440,7 +439,7 @@ public:
 		return res;
 	}
 
-	Tensor<T> tanh() const{
+	Tensor<T> tanh() {
 		Tensor<T> res(*this);
 		res.apply([&](T& a) {a = tensor_impl::tanh<T>(a);});
 
@@ -474,7 +473,6 @@ public:
 		return res;
 	}
 
-
 	Tensor<T> softmax() const{
 		Tensor<T> res(*this);
 		T max = res.max();
@@ -485,8 +483,7 @@ public:
 		return res;
 	}
 
-
-
+	//in-place
 	Tensor<T>& pow_(Tensor<T>& exps){
 		for(auto i = begin(), j = exps.begin(); i != end(); ++i, ++j)
 			*i = std::pow(*i, *j);

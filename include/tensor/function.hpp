@@ -197,7 +197,8 @@ public:
 
 	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
-			Tensor<T> t1 = -inputs[1]->data.pow(2);
+
+			Tensor<T> t1 = -inputs[0]->data.tanh().pow(2);
 			t1 += 1;
 			inputs[0]->grads += t1 * grad;
 			inputs[0]->backward();

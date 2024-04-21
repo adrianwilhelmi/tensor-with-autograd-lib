@@ -17,6 +17,11 @@ int main(){
 		{4, 4, 64}
 	}, true);
 
+	Tensor<double> t = tensor::concat(t2, t3, 0);
+
+	std::cout << t << std::endl;
+
+	/*
 	Tensor<double> t4 = t2 * t3;
 
 	std::cout << t4 << std::endl;
@@ -45,7 +50,7 @@ int main(){
 
 	std::cout << t9 << std::endl;
 
-	Tensor<double> t10 = t9.sigmoid();
+	Tensor<double> t10 = t9.tanh();
 
 	t10.backward();
 
@@ -56,7 +61,7 @@ int main(){
 	std::cout << t6.grad() << std::endl;
 	std::cout << t5.grad() << std::endl;
 	std::cout << t2.grad() << std::endl;
-
+	*/
 
 	return 0;
 }
