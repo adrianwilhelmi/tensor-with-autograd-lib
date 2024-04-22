@@ -63,6 +63,89 @@ TEST(TensorTest, Dimslice){
 	ASSERT_TRUE(tensor::same_storage(t1.dimslice(1,1), t2));
 }
 
+TEST(TensorTest, AddOperatorAutograd){
+	Tensor<int> t1 = tensor::from_list<int,2>({
+		{4, 2},
+		{2, 3},
+	}, true);
+
+	Tensor<int> t2 = tensor::from_list<int,2>({
+		{1, 2},
+		{3, 3},
+	}, true);
+
+	Tensor<int> t3 = t1 + t2;
+
+	EXPECT_EQ(t3(0,0), 5);
+	EXPECT_EQ(t3(0,1), 4);
+	EXPECT_EQ(t3(1,0), 5);
+	EXPECT_EQ(t3(1,1), 6);
+
+	t3.backward();
+
+	Tensor<int> res = tensor::from_list<int,2>({
+		{1, 1},
+		{1, 1}
+	}, false);
+
+	ASSERT_EQ(t1.grad(), res);
+	ASSERT_EQ(t2.grad(), res);
+}
+
+TEST(TensorTest, MulOperatorAutograd){
+	Tensor<int> t1 = tensor::from_list<int,2>({
+		{4, 2},
+		{2, 3},
+	}, true);
+
+	Tensor<int> t2 = tensor::from_list<int,2>({
+		{1, 2},
+		{3, 3},
+	}, true);
+
+	Tensor<int> t3 = t1 * t2;
+
+	EXPECT_EQ(t3(0,0), 4);
+	EXPECT_EQ(t3(0,1), 4);
+	EXPECT_EQ(t3(1,0), 6);
+	EXPECT_EQ(t3(1,1), 9);
+
+	t3.backward();
+
+	ASSERT_EQ(t1.grad(), t2);
+	ASSERT_EQ(t2.grad(), t1);
+}
+
+TEST(TensorTest, SubOperatorAutograd){
+	Tensor<int> t1 = tensor::from_list<int,2>({
+		{4, 2},
+		{2, 3},
+	}, true);
+
+	Tensor<int> t2 = tensor::from_list<int,2>({
+		{1, 2},
+		{3, 3},
+	}, true);
+
+	Tensor<int> t3 = t1 - t2;
+
+	EXPECT_EQ(t3(0,0), 3);
+	EXPECT_EQ(t3(0,1), 0);
+	EXPECT_EQ(t3(1,0), -1);
+	EXPECT_EQ(t3(1,1), 0);
+
+	t3.backward();
+
+	Tensor<int> res = tensor::from_list<int,2>({
+		{1, 1},
+		{1, 1}
+	}, false);
+
+	ASSERT_EQ(t1.grad(), res);
+	ASSERT_EQ(t2.grad(), -res);
+}
+
+
 
 
 

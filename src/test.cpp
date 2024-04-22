@@ -27,16 +27,7 @@ int main(){
 
 	std::cout << ten << std::endl;
 
-	ten.backward();
-
-	std::cout << ten.grad() << std::endl;
-	std::cout << temp.grad() << std::endl;
-	std::cout << t2.grad() << std::endl;
-	std::cout << t.grad() << std::endl;
-
-
-	/*
-	Tensor<double> t4 = t2 * t3;
+	Tensor<double> t4 = ten * t3;
 
 	std::cout << t4 << std::endl;
 
@@ -75,7 +66,7 @@ int main(){
 	std::cout << t6.grad() << std::endl;
 	std::cout << t5.grad() << std::endl;
 	std::cout << t2.grad() << std::endl;
-	*/
+	std::cout << t.grad() << std::endl;
 
 	return 0;
 }
