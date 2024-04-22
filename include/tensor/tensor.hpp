@@ -185,31 +185,7 @@ public:
 	Tensor<T> diag(){
 		assert(this->order() == 2 && this->extent(0) == this->extent(1));
 		
-		TensorSlice diag_slice;
-		diag_slice.size = desc_.extents[0];
-		diag_slice.start = desc_.start;
-		diag_slice.extents[0] = desc_.extents[0];
-		diag_slice.strides[0] = desc_.strides[0] + desc_.strides[1];
-
-		Tensor<T> res(diag_slice, this->elems);
-
-		if(this->req_grad_){
-			res.enable_grad();
-			func_variant<T> fn = FunctionId<T>{};
-
-			auto n = std::make_shared<Node<T>>(res);
-			n->grad_fn = fn;
-			n->set_inputs(*this);
-
-			res.set_node(n);
-		}
-		return res;
-	}
-
-	Tensor<const T> diag() const{
-		assert(this->order() == 2 && this->extent(0) == this->extent(1));
-		
-		TensorSlice diag_slice;
+		TensorSlice diag_slice(1);
 		diag_slice.size = desc_.extents[0];
 		diag_slice.start = desc_.start;
 		diag_slice.extents[0] = desc_.extents[0];
@@ -230,10 +206,34 @@ public:
 		return res;
 	}
 
-	Tensor<T>& transpose_(std::size_t d1, std::size_t d2){
+	Tensor<const T> diag() const{
+		assert(this->order() == 2 && this->extent(0) == this->extent(1));
+		
+		TensorSlice diag_slice(1);
+		diag_slice.size = desc_.extents[0];
+		diag_slice.start = desc_.start;
+		diag_slice.extents[0] = desc_.extents[0];
+		diag_slice.strides[0] = desc_.strides[0] + desc_.strides[1];
+
+		Tensor<T> res(diag_slice, this->elems_);
+
+		if(this->req_grad_){
+			res.enable_grad();
+			func_variant<T> fn = FunctionId<T>{};
+
+			auto n = std::make_shared<Node<T>>(res);
+			n->grad_fn = fn;
+			n->set_inputs(*this);
+
+			res.set_node(n);
+		}
+		return res;
+	}
+
+	Tensor<T>& transpose_(const std::size_t d1, const std::size_t d2){
 		assert(d1 < this->order() && d2 < this->order());
-		std::swap(this->desc.extents[d1], this->desc.extents[d2]);
-		std::swap(this->desc.strides[d1], this->desc.strides[d2]);
+		std::swap(this->desc_.extents[d1], this->desc_.extents[d2]);
+		std::swap(this->desc_.strides[d1], this->desc_.strides[d2]);
 		return*this;
 	}
 
@@ -241,13 +241,10 @@ public:
 		return transpose_(0,1);
 	}
 
-	Tensor<T> transpose(std::size_t d1, std::size_t d2){
+	Tensor<T> transpose(const std::size_t d1, const std::size_t d2){
 		assert(d1 < this->order() && d2 < this->order());
 
-		TensorSlice d;
-		d.start = this->desc_.start;
-		d.extents = this->desc_.extents;
-		d.strides = this->desc_.strides;
+		TensorSlice d = this->desc_;
 
 		std::swap(d.extents[d1], d.extents[d2]);
 		std::swap(d.strides[d1], d.strides[d2]);
@@ -957,7 +954,7 @@ Tensor<T>::view(Args... args) const{
 template<typename T>
 template<typename F>
 Tensor<T>& Tensor<T>::apply(F f){
-	for(auto&x : this->elems_) f(x);
+	for(auto&x : *this) f(x);
 	return*this;
 }
 

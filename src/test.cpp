@@ -3,6 +3,7 @@
 #include"tensor_lib.hpp"
 
 int main(){
+	/*
 	Tensor<double> t3 = tensor::from_list<double,2>({
 		{1, 2, 3},
 		{15, 44, 3},
@@ -67,6 +68,30 @@ int main(){
 	std::cout << t5.grad() << std::endl;
 	std::cout << t2.grad() << std::endl;
 	std::cout << t.grad() << std::endl;
+	*/
+
+	Tensor<double> tensor = tensor::from_list<double,2>({
+		{1, 2, 3},
+		{4, 5, 6},
+		{7, 8, 9},
+		{10, 11, 12}
+	}, false);
+
+	std::cout << tensor << std::endl;
+	tensor.transpose_();
+	std::cout << tensor << std::endl;
+	std::cout << tensor.transpose() << std::endl;
+
+	Tensor<double> tensor2 = tensor::from_list<double,2>({
+		{1, 2, 3},
+		{4, 5, 6},
+		{10, 11, 12}
+	}, false);
+
+
+	std::cout << tensor2 << std::endl;
+	tensor2.diag().tanh_();
+	std::cout << tensor2 << std::endl;
 
 	return 0;
 }
