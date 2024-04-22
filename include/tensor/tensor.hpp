@@ -851,7 +851,7 @@ Tensor<T> Tensor<T>::dimslices_arange(std::size_t dim,
 	d.strides = this->desc_.strides;
 	d.compute_size();
 
-	d.start = this->desc_.start + from * this->desc.strides[dim];
+	d.start = this->desc_.start + from * this->desc_.strides[dim];
 
 	Tensor<T> res(d, this->elems_);
 	if(this->req_grad_){
@@ -881,7 +881,7 @@ Tensor<const T> Tensor<T>::dimslices_arange(std::size_t dim,
 	d.strides = this->desc_.strides;
 	d.compute_size();
 
-	d.start = this->desc_.start + from * this->desc.strides[dim];
+	d.start = this->desc_.start + from * this->desc_.strides[dim];
 
 	Tensor<T> res(d, this->elems_);
 	if(this->req_grad_){

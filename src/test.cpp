@@ -21,14 +21,18 @@ int main(){
 
 	std::cout << t << std::endl;
 
-	t.dimslices_arange(0, 4, 7) = t2;
-	t.dimslices_arange(0, 0, 4) = t2;
+	Tensor<double> temp = t.dimslices_arange(0, 4, 7);
 
-	std::cout << t << std::endl;
+	Tensor<double> ten = temp * t2;
 
-	t.dimslices_arange(0, 0, 4) += 200;
+	std::cout << ten << std::endl;
 
-	std::cout << t << std::endl;
+	ten.backward();
+
+	std::cout << ten.grad() << std::endl;
+	std::cout << temp.grad() << std::endl;
+	std::cout << t2.grad() << std::endl;
+	std::cout << t.grad() << std::endl;
 
 
 	/*
