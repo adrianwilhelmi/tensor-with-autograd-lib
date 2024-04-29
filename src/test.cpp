@@ -70,17 +70,33 @@ int main(){
 	std::cout << t.grad() << std::endl;
 	*/
 
+	/*
 	Tensor<double> tensor = tensor::from_list<double,2>({
 		{1, 2, 3},
 		{4, 5, 6},
 		{7, 8, 9},
 		{10, 11, 12}
-	}, false);
+	}, true);
 
-	std::cout << tensor << std::endl;
-	tensor.transpose_();
-	std::cout << tensor << std::endl;
-	std::cout << tensor.transpose() << std::endl;
+	Tensor<double> t3d(2, 4, 3);
+	t3d.enable_grad();
+
+	t3d.dimslice(0,0) += tensor;
+	t3d.dimslice(0,1) += tensor * 2.0;
+
+	auto temp1 = t3d.dimslice(0,0);
+	auto temp2 = t3d.dimslice(0,1);
+
+	Tensor<double> catted = tensor::concat(temp1,
+			temp2, 0);
+
+	std::cout << t3d << std::endl;
+
+	std::cout << catted << std::endl;
+
+	catted.backward();
+	
+	std::cout << tensor.grad() << std::endl;
 
 	Tensor<double> tensor2 = tensor::from_list<double,2>({
 		{1, 2, 3},
@@ -88,10 +104,27 @@ int main(){
 		{10, 11, 12}
 	}, false);
 
+	std::cout << t3d.view(8, 3) << std::endl;
 
-	std::cout << tensor2 << std::endl;
-	tensor2.diag().tanh_();
-	std::cout << tensor2 << std::endl;
+	std::cout << t3d.view(4, 6) << std::endl;
+
+	*/
+
+	Tensor<double> vec = tensor::from_list<double,1>(
+		{1, 5, 4, 8, 9, 4}
+		, false);
+
+	std::cout << vec << std::endl;
+
+	std::cout << vec.dimslice(0, 1) << std::endl;
+
+	auto s1 = vec.dimslice(0,1);
+	auto s2 = vec.dimslice(0,4);
+
+	std::cout << s1 << std::endl;
+	std::cout << s2 << std::endl;
+
+	std::cout << s1 + s2 << std::endl;
 
 	return 0;
 }

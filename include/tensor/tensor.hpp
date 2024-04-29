@@ -97,11 +97,6 @@ public:
 		for(auto it = this->begin(); it != this->end(); ++it){
 			*it = val;
 		}
-		/*
-		for(auto& elem : *this){
-			elem = val;
-		}
-		*/
 	}
 
 	//indexing
@@ -112,9 +107,10 @@ public:
 	Enable_if<tensor_impl::Requesting_element<Args...>(), const T&>
 	operator()(Args... args) const;
 
-	Tensor<T> operator()(TensorSlice d){
-		return {d, this->elems_};
-	}
+	Tensor<T> operator()(TensorSlice d) {return {d, this->elems_};}
+
+	T& item() {return elems_[desc_.start];}
+	const T& item() const {return elems_[desc_.start];}
 
 	Tensor<T> dimslice(const std::size_t n, const std::size_t m);
 	Tensor<const T> dimslice(const std::size_t n, const std::size_t m) const;
@@ -233,7 +229,6 @@ public:
 	Tensor<T>& transpose_(const std::size_t d1, const std::size_t d2){
 		assert(d1 < this->order() && d2 < this->order());
 		std::swap(this->desc_.extents[d1], this->desc_.extents[d2]);
-		std::swap(this->desc_.strides[d1], this->desc_.strides[d2]);
 		return*this;
 	}
 
@@ -247,7 +242,6 @@ public:
 		TensorSlice d = this->desc_;
 
 		std::swap(d.extents[d1], d.extents[d2]);
-		std::swap(d.strides[d1], d.strides[d2]);
 
 		Tensor<T> res(d, this->elems_);
 		if(this->req_grad_){
@@ -276,7 +270,6 @@ public:
 		d.strides = this->desc_.strides;
 
 		std::swap(d.extents[d1], d.extents[d2]);
-		std::swap(d.strides[d1], d.strides[d2]);
 
 		Tensor<T> res(d, this->elems_);
 		if(this->req_grad_){
@@ -540,14 +533,14 @@ public:
 
 	Tensor<T>& grad(TensorSlice d){
 		if(!req_grad_ || !this->node){
-			throw std::runtime_error("grad is off");
+			throw std::runtime_error("grad(TensorSlice): grad is off");
 		}
 		return this->node->grads(d);
 	}
 
 	const Tensor<T>& grad(TensorSlice d) const{
 		if(!req_grad_ || !this->node){
-			throw std::runtime_error("grad is off");
+			throw std::runtime_error("grad(): grad is off");
 		}
 		return this->node->grads(d);
 	}
@@ -557,6 +550,9 @@ public:
 	}
 
 	void backward(){
+		if(!node){
+			throw std::runtime_error("backward(): grad is off");
+		}
 		if(this->node->grads.size() == 0){
 			this->node->init_grad();
 		}
@@ -617,16 +613,29 @@ Tensor<T>& Tensor<T>::operator=(const Tensor<U>&x){
 template<typename T>
 template<typename... Exts>
 Tensor<T>::Tensor(Exts... exts)
-	: desc_{exts...},
+	: desc_(exts...),
 	elems_(desc_.size),
 	req_grad_(false){
 
+		/*
+	if(req_grad){
+		this->node = std::make_shared<Node<T>>(*this);
+	}
+	else{
+		this->node = nullptr;
+	}
+	*/
 	this->node = nullptr;
 }
 
 //printing
 template<typename T>
 std::ostream& operator<<(std::ostream& os, const Tensor<T>& tensor) {
+	if(tensor.order() == 0){
+		os << "{" << tensor.item() << "}" << std::endl;
+		return os;
+	}
+
 	auto desc = tensor.descriptor();
 	auto it = tensor.begin();
 	if(tensor.order() == 1){

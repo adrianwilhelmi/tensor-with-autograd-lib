@@ -66,6 +66,34 @@ namespace tensor{
 		return res;
 	}
 
+	template<typename T>
+	Tensor<T> concat(const Tensor<T>& t1, const Tensor<T>& t2, std::size_t dim){
+		assert(t1.order() == t2.order());
+		assert(dim < t1.order());
+
+		for(std::size_t i = 0; i < t1.order(); ++i){
+			if(i != dim){
+				assert(t1.extent(i) == t2.extent(i) 
+						&& "other dims must match");
+			}
+		}
+
+		std::vector<std::size_t> new_exts(t1.descriptor().extents);
+		new_exts[dim] += t2.descriptor().extents[dim];
+		TensorSlice desc(new_exts);
+
+		Tensor<T> res(desc);
+
+		for(std::size_t i = 0; i < t1.extent(dim); ++i){
+			res.dimslice(dim, i) += t1.dimslice(dim, i);
+		}
+		for(std::size_t i = 0; i < t2.extent(dim); ++i){
+			res.dimslice(dim, i + t1.extent(dim)) += t2.dimslice(dim, i);
+		}
+
+		return res;
+	}
+
 
 
 }; //namespace tensor

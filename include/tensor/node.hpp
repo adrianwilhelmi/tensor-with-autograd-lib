@@ -43,6 +43,15 @@ struct Node{
 		}(), ...);
 	}
 
+	template<typename... Args>
+	Enable_if<All(Tensor_type<Args>()...), void>
+	set_inputs(const Args&... args) const{
+		([&]{
+		 	inputs.push_back(args.get_node());
+		}(), ...);
+	}
+
+
 	void backward(){
 		std::visit([&](auto& fn){
 			fn.backward(this->grads, this->inputs);

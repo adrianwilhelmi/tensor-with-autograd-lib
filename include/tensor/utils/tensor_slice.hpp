@@ -32,10 +32,19 @@ struct TensorSlice{
 	}
 
 	TensorSlice(std::size_t order)
-		: size(0), start(0), extents(order), strides(order) {}
+		: size(0), start(0), extents(order), strides(order) {
+		if(order == 0){
+			size = 1;
+			extents = {1};
+			strides = {1};
+		}
+	}
 
+	//explicit TensorSlice(Dims... dims) : extents{static_cast<std::size_t>(dims)...}{
 	template<typename... Dims>
-	explicit TensorSlice(Dims... dims) : extents{static_cast<std::size_t>(dims)...}{
+	explicit TensorSlice(Dims... dims) : start{0}, extents(sizeof...(Dims)){
+		std::size_t args[sizeof...(Dims)] {std::size_t(dims)...};
+		std::copy(std::begin(args), std::end(args), extents.begin());
 		compute_strides();
 	}
 
