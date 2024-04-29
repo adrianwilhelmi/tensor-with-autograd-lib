@@ -121,10 +121,20 @@ int main(){
 	auto s1 = vec.dimslice(0,1);
 	auto s2 = vec.dimslice(0,4);
 
+	s1.enable_grad();
+	s2.enable_grad();
+
 	std::cout << s1 << std::endl;
 	std::cout << s2 << std::endl;
 
 	std::cout << s1 + s2 << std::endl;
+
+	auto s = s1 * s2;
+
+	s.backward();
+
+	std::cout << s1.grad() << std::endl;
+	std::cout << s2.grad() << std::endl;
 
 	return 0;
 }
