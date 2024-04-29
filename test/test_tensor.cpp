@@ -145,6 +145,25 @@ TEST(TensorTest, SubOperatorAutograd){
 	ASSERT_EQ(t2.grad(), -res);
 }
 
+TEST(TensorTest, 0DimTensor){
+	Tensor<double> vec = tensor::from_list<double,1>(
+		{1, 5, 4, 8, 9, 4}
+		, false);
+
+	auto s1 = vec.dimslice(0,1);
+	auto s2 = vec.dimslice(0,4);
+
+	s1.enable_grad();
+	s2.enable_grad();
+
+	auto s = s1 * s2;
+
+	s.backward();
+
+	EXPECT_EQ(s1.grad(), s2);
+	EXPECT_EQ(s2.grad(), s1);
+}
+
 
 
 

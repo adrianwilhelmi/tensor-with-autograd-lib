@@ -412,7 +412,7 @@ public:
 		return res;
 	}
 
-	Tensor<T> relu() const{
+	Tensor<T> relu() {
 		Tensor<T> res(*this);
 		res.apply([&](T& a) {a = tensor_impl::relu<T>(a);});
 
@@ -463,7 +463,7 @@ public:
 		return res;
 	}
 
-	Tensor<T> softmax() const{
+	Tensor<T> softmax() {
 		Tensor<T> res(*this);
 		T max = res.max();
 		res.apply([&](T& a) {a = std::exp(a - max);});
@@ -475,6 +475,7 @@ public:
 
 	//in-place
 	Tensor<T>& pow_(Tensor<T>& exps){
+		assert(this->order() == exps.order() && this->size() = exps.size());
 		for(auto i = begin(), j = exps.begin(); i != end(); ++i, ++j)
 			*i = std::pow(*i, *j);
 		return*this;
