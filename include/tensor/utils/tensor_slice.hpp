@@ -81,6 +81,14 @@ struct TensorSlice{
 		return offset(idx);
 	}
 
+	bool is_contiguous(){
+		for(std::size_t i = 1; i < strides.size(); ++i){
+			if(strides[i] > strides[i - 1])
+				return false;
+		}
+		return true;
+	}
+
 	std::size_t size;
 	std::size_t start;
 	std::vector<std::size_t> extents;

@@ -53,7 +53,9 @@ public:
 		assert(a.descriptor() == b.descriptor());
 
 		std::ptrdiff_t diff = 0;
-		std::size_t ord = a.size();
+		std::size_t ord = std::min(a.descriptor().extents.size(), 
+					b.descriptor().extents.size());
+
 		for(std::size_t i = 0; i < ord; ++i){
 			auto stride_diff = (a.index[i] - b.index[i]) * a.desc.strides[i];
 			diff += stride_diff;
@@ -168,9 +170,12 @@ TensorIterator<T> operator+(int n, TensorIterator<T>&it){
 
 template<typename T>
 void TensorIterator<T>::increment(){
+	/*
 	if(ptr == end){
+		std::cout << "end " << *ptr << " ";
 		return;
 	}
+	*/
 
 	std::size_t d = index.size() - 1;
 	while(true){

@@ -17,6 +17,16 @@ int main(){
 		{4, 4, 64}
 	}, true);
 
+	std::cout << t3 << std::endl;
+	std::cout << t2 << std::endl;
+
+	std::cout << t3.descriptor().is_contiguous() << std::endl;
+	std::cout << t3.transpose().descriptor().is_contiguous() << std::endl;
+
+	std::cout << t3.view(12) << std::endl;
+	std::cout << t3.transpose(0,1).view(12) << std::endl;
+	std::cout << t2.view(12) << std::endl;
+
 	Tensor<double> t = tensor::concat(t2, t3, 0);
 
 	std::cout << t << std::endl;
@@ -89,6 +99,8 @@ int main(){
 
 	std::cout << t3d << std::endl;
 
+	std::cout << t3d.descriptor() << std::endl;
+
 	std::cout << catted << std::endl;
 
 	catted.backward();
@@ -130,6 +142,8 @@ int main(){
 
 	std::cout << s1.grad() << std::endl;
 	std::cout << s2.grad() << std::endl;
+
+	std::cout << vec.sort() << std::endl;
 
 	return 0;
 }

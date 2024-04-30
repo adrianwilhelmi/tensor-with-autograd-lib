@@ -229,6 +229,7 @@ public:
 	Tensor<T>& transpose_(const std::size_t d1, const std::size_t d2){
 		assert(d1 < this->order() && d2 < this->order());
 		std::swap(this->desc_.extents[d1], this->desc_.extents[d2]);
+		std::swap(this->desc_.strides[d1], this->desc_.strides[d2]);
 		return*this;
 	}
 
@@ -237,13 +238,15 @@ public:
 	}
 
 	Tensor<T> transpose(const std::size_t d1, const std::size_t d2){
-		assert(d1 < this->order() && d2 < this->order());
+		assert(d1 < this->order());
+		assert(d2 < this->order());
 
 		TensorSlice d = this->desc_;
 
+		std::swap(d.strides[d1], d.strides[d2]);
 		std::swap(d.extents[d1], d.extents[d2]);
 
-		Tensor<T> res(d, this->elems_);
+		Tensor<T> res{d, this->elems_};
 		if(this->req_grad_){
 			res.enable_grad();
 			func_variant<T> fn = FunctionId<T>{};
