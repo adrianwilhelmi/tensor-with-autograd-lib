@@ -475,7 +475,8 @@ public:
 
 	//in-place
 	Tensor<T>& pow_(Tensor<T>& exps){
-		assert(this->order() == exps.order() && this->size() = exps.size());
+		assert(this->order() == exps.order());
+		assert(this->size() == exps.size());
 		for(auto i = begin(), j = exps.begin(); i != end(); ++i, ++j)
 			*i = std::pow(*i, *j);
 		return*this;
@@ -483,7 +484,7 @@ public:
 	Tensor<T>& pow_(T exp){
 		return apply([&](T&a) {a = std::pow(a, exp);});
 	}
-	Tensor<T>& log_(T exp){
+	Tensor<T>& log_(){
 		return apply([&](T&a) {a = std::log(a);});
 	}
 	Tensor<T>& exp_(){
@@ -999,8 +1000,11 @@ template<typename T>
 template<typename M, typename F>
 Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::apply(const M&m, F f){
 	assert(same_extents(this->desc_, m.descriptor()));
-	for(auto i = begin(), j = m.begin(); i != end(); ++i, ++j)
+	auto j = m.begin();
+	for(auto i = begin(); i != end(); ++i){
 		f(*i, *j);
+		++j;
+	}
 	return*this;
 }
 

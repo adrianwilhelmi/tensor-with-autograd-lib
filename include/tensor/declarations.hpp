@@ -65,7 +65,7 @@ using func_variant = std::variant<
 >;
 
 template<typename T>
-class Node;
+struct Node;
 
 template<typename T>
 using node_vector = std::vector<std::shared_ptr<Node<T>>>;

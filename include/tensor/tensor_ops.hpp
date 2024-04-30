@@ -14,6 +14,7 @@ namespace tensor{
 
 	template<typename T, std::size_t N>
 	Tensor<T> from_list(const TensorInitializer<T,N>& init, bool req_grad = false){
+		tensor_impl::check_consistency(init);
 		TensorSlice d;
 		tensor_impl::derive_extents<T,N>(init, d);
 		d.compute_strides();

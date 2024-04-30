@@ -3,7 +3,6 @@
 #include"tensor_lib.hpp"
 
 int main(){
-	/*
 	Tensor<double> t3 = tensor::from_list<double,2>({
 		{1, 2, 3},
 		{15, 44, 3},
@@ -68,9 +67,7 @@ int main(){
 	std::cout << t5.grad() << std::endl;
 	std::cout << t2.grad() << std::endl;
 	std::cout << t.grad() << std::endl;
-	*/
 
-	/*
 	Tensor<double> tensor = tensor::from_list<double,2>({
 		{1, 2, 3},
 		{4, 5, 6},
@@ -107,8 +104,6 @@ int main(){
 	std::cout << t3d.view(8, 3) << std::endl;
 
 	std::cout << t3d.view(4, 6) << std::endl;
-
-	*/
 
 	Tensor<double> vec = tensor::from_list<double,1>(
 		{1, 5, 4, 8, 9, 4}

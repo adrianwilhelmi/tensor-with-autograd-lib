@@ -1,4 +1,5 @@
-CXX=g++
+#CXX=g++
+CXX=clang++
 CXXFLAGS=-Wall -Wextra -Werror -pedantic -ggdb -ggdb3 -O3 -g -std=c++17
 LDFLAGS=-Iinclude
 LDLIBS=-lm

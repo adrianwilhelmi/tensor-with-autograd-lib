@@ -28,7 +28,7 @@ namespace tensor_impl{
 	struct TensorInit<T,0>;
 
 	template<typename T>
-	bool check_consistency(const std::initializer_list<T>&list){
+	bool check_consistency(const std::initializer_list<T>&/*list*/){
 		return true;
 	}
 
