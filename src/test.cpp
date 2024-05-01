@@ -7,19 +7,18 @@ int main(){
 		{1, 2, 3},
 		{15, 44, 3},
 		{31, 12, 3},
-		{4, 4, 2}
 	}, false);
 
 	Tensor<double> t2 = tensor::from_list<double,2>({
 		{1, 5, 2},
 		{1, 4, 16},
 		{1, 10, 32},
-		{4, 4, 64}
 	}, true);
 
 	//std::cout << t3 << std::endl;
-	std::cout << t3.transpose() << std::endl;
+	std::cout << t3 << std::endl;
 	std::cout << t2 << std::endl;
+
 
 	/*
 	std::cout << t3 << std::endl;
@@ -27,19 +26,14 @@ int main(){
 	std::cout << t3 << std::endl;
 	*/
 	
-	std::cout << t3.transpose(0,1).view(12) << std::endl;
-	std::cout << t2.transpose().reshape(12) << std::endl;
+	auto mf2 = t2.reshape(3,1,3);
+	auto mf3 = t3.transpose().reshape(1,3,3);
 
-	auto tpd = t3.transpose(0,1);
+	std::cout << mf2 << std::endl;
+	std::cout << mf3 << std::endl;
 
-	for(auto iter = t3.begin(); iter != t3.end(); ++iter){
-		std::cout << *iter << " ";
-	}
-	std::cout << std::endl;
-	for(auto iter = tpd.begin(); iter != tpd.end(); ++iter){
-		std::cout << *iter << " ";
-	}
-	std::cout << std::endl;
+	std::cout << t2.reshape(9) << std::endl;
+	std::cout << t3.transpose(0,1).reshape(9) << std::endl;
 
 
 	/*

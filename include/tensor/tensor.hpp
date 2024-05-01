@@ -604,8 +604,13 @@ template<typename U>
 Tensor<T>::Tensor(const Tensor<U>&x)
 	: elems_(x.size()), desc_(x.descriptor().extents), req_grad_(false) {
 	static_assert(Convertible<U,T>(), "inconsistent types");
-	//this->desc_ = x.descriptor();
-	std::copy(x.begin(), x.end(), this->begin());
+	//std::copy(x.begin(), x.end(), this->begin());
+
+	auto xit = x.begin();
+	for(auto it = this->begin(); it != this->end(); ++it){
+		*it = *xit;
+		++xit;
+	}
 
 	this->node = nullptr;
 }

@@ -88,13 +88,15 @@ TensorIterator<T>::TensorIterator(const TensorSlice&s, T*base, bool limit)
 	if(s.size != 0)
 		index[0] = desc.extents[0];
 
+	/*
 	std::vector<std::size_t> end_index = s.extents;
 	for(std::size_t i = 0; i < end_index.size(); ++i){
 		--end_index[i];
 	}
 	this->end = base + s.offset(end_index);
+	*/
 
-	//this->end = base + s.offset(index);
+	this->end = base + s.offset(index);
 	this->begin = base + s.start;
 
 	if(limit){
