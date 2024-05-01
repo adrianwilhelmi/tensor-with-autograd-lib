@@ -31,10 +31,17 @@ public:
 
 	Tensor() = default;
 	Tensor(Tensor&&) = default;
-	Tensor(const Tensor& x){
+	Tensor(const Tensor& x)
+		: desc_(x.descriptor().extents), elems_(x.size()){
 		this->req_grad_ = false;
-		this->desc_ = x.desc_;
-		this->elems_ = x.elems_;
+
+		auto xit = x.begin();
+		for(auto it = this->begin(); it != this->end(); ++it){
+			*it = *xit;
+			++xit;
+		}
+
+		//std::copy(x.begin(), x.end(), this->begin());
 
 		this->node = nullptr;
 	}
@@ -135,6 +142,15 @@ public:
 	Enable_if<tensor_impl::Requesting_element<Args...>(),
 		Tensor<const T>>
 	view(Args... args) const;
+
+	template<typename... Args>
+	Enable_if<tensor_impl::Requesting_element<Args...>(),
+		Tensor<T>>
+	reshape(Args... args);
+	template<typename... Args>
+	Enable_if<tensor_impl::Requesting_element<Args...>(),
+		Tensor<const T>>
+	reshape(Args... args) const;
 
 	Tensor<T> operator[](std::size_t i) {return dimslice(0, i);}
 	Tensor<const T> operator[](std::size_t i) const {return dimslice(0, i);}
@@ -586,9 +602,9 @@ private:
 template<typename T>
 template<typename U>
 Tensor<T>::Tensor(const Tensor<U>&x)
-	: elems_(x.size()), req_grad_(false) {
+	: elems_(x.size()), desc_(x.descriptor().extents), req_grad_(false) {
 	static_assert(Convertible<U,T>(), "inconsistent types");
-	this->desc_ = x.descriptor();
+	//this->desc_ = x.descriptor();
 	std::copy(x.begin(), x.end(), this->begin());
 
 	this->node = nullptr;
@@ -963,6 +979,121 @@ Tensor<T>::view(Args... args) const{
 	}
 	return res;
 }
+
+template<typename T>
+template<typename... Args>
+Enable_if<tensor_impl::Requesting_element<Args...>(), Tensor<T>>
+Tensor<T>::reshape(Args... args) {
+	std::size_t args_product = (... * args);
+	std::size_t exts_product = std::accumulate(this->desc_.extents.begin(),
+			this->desc_.extents.end(), 1, [](std::size_t a,
+				std::size_t b) {return a * b;});
+
+	assert(args_product == exts_product);
+
+	std::vector<std::size_t> exts{static_cast<std::size_t>(args)...};
+	TensorSlice d{exts};
+
+	if(!this->desc_.is_contiguous()){
+		Tensor<T> res(d);
+		auto rit = res.begin();
+		auto it = this->begin();
+		for(std::size_t i = 0; i < this->size(); ++i){
+			*rit = *it;
+			++it;
+			++rit;
+		}
+
+		if(this->req_grad_){
+			res.enable_grad();
+			func_variant<T> fn = FunctionId<T>{};
+
+			auto n = std::make_shared<Node<T>>(res);
+			n->grad_fn = fn;
+			n->set_inputs(*this);
+
+			res.set_node(n);
+		}
+
+		return res;
+	}
+	else{
+		Tensor<T> res(d, this->elems_);
+
+		if(this->req_grad_){
+			res.enable_grad();
+			func_variant<T> fn = FunctionId<T>{};
+
+			auto n = std::make_shared<Node<T>>(res);
+			n->grad_fn = fn;
+			n->set_inputs(*this);
+
+			res.set_node(n);
+		}
+
+		return res;
+	}
+}
+
+template<typename T>
+template<typename... Args>
+Enable_if<tensor_impl::Requesting_element<Args...>(), Tensor<const T>>
+Tensor<T>::reshape(Args... args) const {
+	std::size_t args_product = (... * args);
+	std::size_t exts_product = std::accumulate(this->desc_.extents.begin(),
+			this->desc_.extents.end(), 1, [](std::size_t a,
+				std::size_t b) {return a * b;});
+
+	assert(args_product == exts_product);
+
+	std::vector<std::size_t> exts{static_cast<std::size_t>(args)...};
+	TensorSlice d{exts};
+
+	bool cont = true;
+	for(std::size_t i = 1; i < this->desc_.strides.size(); ++i){
+		if(this->desc_.strides[i] > this->desc_.strides[i - 1])
+			cont = false;
+	}
+
+	if(cont){
+		Tensor<T> res(d);
+		auto it = res.begin();
+		for(const auto&elem : *this){
+			*it = elem;
+			++it;
+		}
+
+		if(this->req_grad_){
+			res.enable_grad();
+			func_variant<T> fn = FunctionId<T>{};
+
+			auto n = std::make_shared<Node<T>>(res);
+			n->grad_fn = fn;
+			n->set_inputs(*this);
+
+			res.set_node(n);
+		}
+
+		return res;
+	}
+	else{
+		Tensor<T> res(d, this->elems_);
+
+		if(this->req_grad_){
+			res.enable_grad();
+			func_variant<T> fn = FunctionId<T>{};
+
+			auto n = std::make_shared<Node<T>>(res);
+			n->grad_fn = fn;
+			n->set_inputs(*this);
+
+			res.set_node(n);
+		}
+		
+		return res;
+	}
+}
+
 
 //tensor scalar ops
 template<typename T>

@@ -88,7 +88,13 @@ TensorIterator<T>::TensorIterator(const TensorSlice&s, T*base, bool limit)
 	if(s.size != 0)
 		index[0] = desc.extents[0];
 
-	this->end = base + desc.offset(index);
+	std::vector<std::size_t> end_index = s.extents;
+	for(std::size_t i = 0; i < end_index.size(); ++i){
+		--end_index[i];
+	}
+	this->end = base + s.offset(end_index);
+
+	//this->end = base + s.offset(index);
 	this->begin = base + s.start;
 
 	if(limit){
@@ -103,6 +109,8 @@ template<typename T>
 TensorIterator<T>&TensorIterator<T>::operator=(const TensorIterator &iter){
 	std::copy(iter.index.begin(), iter.index.end(), index.begin());
 	ptr = iter.ptr;
+	end = iter.end;
+	begin = iter.begin;
 	return*this;
 }
 
@@ -197,9 +205,11 @@ void TensorIterator<T>::increment(){
 
 template<typename T>
 void TensorIterator<T>::decrement(){
+	/*
 	if(ptr == begin){
 		return;
 	}
+	*/
 
 	std::size_t d = index.size() - 1;
 	while (true) {
@@ -229,11 +239,11 @@ void TensorIterator<T>::decrement(){
 template<typename T>
 TensorIterator<T>& TensorIterator<T>::operator+=(difference_type n){
 	if(n >= 0){
-		for(difference_type i = 0; i < n; ++i){
+		for(difference_type i = 0; i < std::abs(n); ++i){
 			this->increment();
 		}
 	} else{
-		for(difference_type i = 0; i < n; ++i){
+		for(difference_type i = 0; i < std::abs(n); ++i){
 			this->decrement();
 		}
 	}
