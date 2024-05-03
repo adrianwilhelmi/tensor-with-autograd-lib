@@ -27,7 +27,7 @@ struct TensorSlice{
 	}
 
 	TensorSlice(const std::vector<std::size_t>&exts)
-		: start(0), extents(exts){
+		: size(0), start(0), extents(exts){
 		compute_strides();
 		compute_size();
 	}

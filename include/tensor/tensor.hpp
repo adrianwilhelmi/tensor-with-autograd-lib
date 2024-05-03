@@ -263,6 +263,22 @@ public:
 		std::swap(d.extents[d1], d.extents[d2]);
 
 		Tensor<T> res{d, this->elems_};
+
+		/*
+		std::vector<std::size_t> exts = this->desc_.extents;
+		std::swap(exts[d1], exts[d2]);
+		TensorSlice d{exts};
+
+		Tensor<T> res(d);
+		auto rit = res.begin();
+		auto it = this->begin();
+		for(std::size_t i = 0; i < this->size(); ++i){
+			*rit = *it;
+			++it;
+			++rit;
+		}
+		*/
+
 		if(this->req_grad_){
 			std::cout << "transpsoe ok" << std::endl;
 			res.enable_grad();

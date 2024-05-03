@@ -72,6 +72,13 @@ private:
 	void increment();
 	void decrement();
 
+	void adjust_pointer_for_end(){
+		ptr = begin + desc.start;
+		for(std::size_t i = 0; i < desc.extents.size(); ++i){
+			ptr += desc.strides[i] * (desc.extents[i] - 1);
+		}
+	}
+
 	T*end;
 	T*begin;
 
@@ -82,19 +89,23 @@ private:
 
 template<typename T>
 TensorIterator<T>::TensorIterator(const TensorSlice&s, T*base, bool limit)
-	: index(s.extents.size()), desc(s) {
+	: begin(base), index(s.extents.size()), desc(s) {
 	std::fill(index.begin(), index.end(), 0);
+
+	/*
+	ptr = base + desc.start;
+
+	if(limit){
+		for(std::size_t i = 0; i < s.extents.size(); ++i){
+			index[i] = s.extents[i];
+		}
+		adjust_pointer_for_end();
+	}
+	*/
+
 
 	if(s.size != 0)
 		index[0] = desc.extents[0];
-
-	/*
-	std::vector<std::size_t> end_index = s.extents;
-	for(std::size_t i = 0; i < end_index.size(); ++i){
-		--end_index[i];
-	}
-	this->end = base + s.offset(end_index);
-	*/
 
 	this->end = base + s.offset(index);
 	this->begin = base + s.start;
@@ -203,6 +214,22 @@ void TensorIterator<T>::increment(){
 			break;
 		};
 	}
+	/*
+
+	std::size_t d = 0;
+	while(d < desc.extents.size()){
+		++index[d];
+		ptr += desc.strides[d];
+
+		if(index[d] < desc.extents[d]){
+			return;
+		}
+
+		ptr -= index[d] * desc.strides[d];
+		index[d] = 0;
+		++d;
+	}
+	*/
 }
 
 template<typename T>

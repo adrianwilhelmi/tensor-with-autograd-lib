@@ -35,16 +35,28 @@ int main(){
 
 	auto dscd = t3.dimslices(1, 1, 2);
 
+	//auto mulres = longtr * dscd;
 
-	auto mulres = longtr * dscd;
+	//dscd.transpose_();
 
-	mulres.backward();
+	auto dscdt = dscd.transpose(0,1);
 
-	std::cout << mulres.grad() << std::endl;
+	std::cout << dscd << std::endl;
+	std::cout << dscdt << std::endl;
+
+	auto mmres = tensor::matmul(dscdt, longtr);
+
+	//mulres.backward();
+	mmres.backward();
+
+	std::cout << mmres.grad() << std::endl;
+	std::cout << dscdt.grad() << std::endl;
 	std::cout << dscd.grad() << std::endl;
 	std::cout << longtr.grad() << std::endl;
 	std::cout << longt.grad() << std::endl;
 	std::cout << t3.grad() << std::endl;
+
+	//std::cout << mmres << std::endl;
 
 
 
