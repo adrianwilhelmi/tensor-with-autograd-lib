@@ -7,37 +7,104 @@ int main(){
 		{1, 2, 3},
 		{15, 44, 3},
 		{31, 12, 3},
-	}, false);
+		{31, 12, 3},
+	}, true);
 
 	Tensor<double> t2 = tensor::from_list<double,2>({
 		{1, 5, 2},
 		{1, 4, 16},
 		{1, 10, 32},
+		{31, 12, 3},
 	}, true);
 
 	//std::cout << t3 << std::endl;
-	std::cout << t3 << std::endl;
-	std::cout << t2 << std::endl;
+	//std::cout << t2 << std::endl;
+	
+	Tensor<double> t2t = tensor::from_list<double,2>({
+		{1, 1, 1, 31},
+		{5, 4, 10, 12},
+		{2, 16, 32, 3}
+	}, true);
+
+	//auto t2tt = t2t.transpose(0,1);
+
+	Tensor<double> longt = tensor::from_list<double,1>(
+		{1, 2, 3, 4, 5, 6, 7, 8}, true);
+
+	auto longtr = longt.reshape(4, 2);
+
+	auto dscd = t3.dimslices(1, 1, 2);
+
+
+	auto mulres = longtr * dscd;
+
+	mulres.backward();
+
+	std::cout << mulres.grad() << std::endl;
+	std::cout << dscd.grad() << std::endl;
+	std::cout << longtr.grad() << std::endl;
+	std::cout << longt.grad() << std::endl;
+	std::cout << t3.grad() << std::endl;
+
+
 
 
 	/*
-	std::cout << t3 << std::endl;
-	t3.dimslice(0,1).sort_();
-	std::cout << t3 << std::endl;
+	auto mmres = tensor::matmul(t3, t2t);
+	mmres.backward();
+	std::cout << t3.grad() << std::endl;
+	std::cout << t2t.grad() << std::endl;
 	*/
-	
-	auto mf2 = t2.reshape(3,1,3);
-	auto mf3 = t3.transpose().reshape(1,3,3);
 
+
+
+	/*
+	std::cout << "called here/" << std::endl;
+	Tensor<double> vec3 = t2.transpose(0,1).dimslice(1,1).reshape(3,1);
+	//Tensor<double> vec3 = t2t.dimslice(1,1).reshape(3,1);
+
+	
+	std::cout << "yae sure/" << std::endl;
+	Tensor<double> ommr2 = tensor::matmul(t3, vec3);
+
+	std::cout << t3 << std::endl;
+	std::cout << vec3 << std::endl;
+	
+	std::cout << ommr2 << std::endl;
+
+
+
+	ommr2.backward();
+
+	std::cout << t3.grad() << std::endl;
+	std::cout << t2.grad() << std::endl;
+	std::cout << vec3.grad() << std::endl;
+
+	*/
+
+
+
+
+	//Tensor<double> mmr2 = tensor::matmul(t3, vec3);
+
+	//std::cout << mmr2 << std::endl;
+
+
+
+	/*
 	std::cout << mf2 << std::endl;
 	std::cout << mf3 << std::endl;
 
 	std::cout << t2.reshape(9) << std::endl;
 	std::cout << t3.transpose(0,1).reshape(9) << std::endl;
+	*/
+
+
+
+
 
 
 	/*
-
 	Tensor<double> t = tensor::concat(t2, t3, 0);
 
 	std::cout << t << std::endl;
@@ -109,8 +176,6 @@ int main(){
 			temp2, 0);
 
 	std::cout << t3d << std::endl;
-
-	std::cout << t3d.descriptor() << std::endl;
 
 	std::cout << catted << std::endl;
 

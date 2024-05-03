@@ -95,7 +95,67 @@ namespace tensor{
 		return res;
 	}
 
+	template<typename T>
+	T dot(const Tensor<T>& t1, const Tensor<T>& t2){
+		assert(t1.size() == t2.size());
+		return std::inner_product(t1.begin(), t1.end(), t2.begin(), T(0));
+	}
 
+	template<typename T>
+	Tensor<T> matmul(Tensor<T>& t1, Tensor<T>& t2){
+		assert(t1.order() == 2);
+		assert(t2.order() == 2);
+		assert(t1.extent(1) == t2.extent(0));
+
+		Tensor<T> res(t1.extent(0), t2.extent(1));
+
+		for(std::size_t i = 0; i < t1.extent(0); ++i){
+			for(std::size_t j = 0; j < t2.extent(1); ++j){
+				/*
+				res(i,j) = dot(t1.dimslice(0,i),
+						t2.dimslice(1,j));
+				*/
+				T sum = 0;
+				for(std::size_t k = 0; k < t1.extent(1); ++k){
+					sum += t1(i, k) * t2(k, j);
+				}
+				res(i, j) = sum;
+			}
+		}
+
+		if(t1.requires_grad() || t2.requires_grad()){
+			res.enable_grad();
+
+			auto n = std::make_shared<Node<T>>(res);
+			func_variant<T> fn = FunctionMatmul<T>{};
+			n->grad_fn = fn;
+			n->set_inputs(t1, t2);
+
+			res.set_node(n);
+		}
+
+		return res;
+	}
+
+	template<typename T>
+	Tensor<T> matmul(const Tensor<T>& t1, const Tensor<T>& t2){
+		assert(t1.order() == 2);
+		assert(t2.order() == 2);
+		assert(t1.extent(1) == t2.extent(0));
+
+		Tensor<T> res(t1.extent(0), t2.extent(1));
+
+		for(std::size_t i = 0; i < t1.extent(0); ++i){
+			for(std::size_t j = 0; j < t2.extent(1); ++j){
+				T sum = 0;
+				for(std::size_t k = 0; k < t1.extent(1); ++k){
+					sum += t1(i, k) * t2(k, j);
+				}
+				res(i, j) = sum;
+			}
+		}
+		return res;
+	}
 
 }; //namespace tensor
 

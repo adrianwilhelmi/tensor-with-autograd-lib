@@ -264,6 +264,7 @@ public:
 
 		Tensor<T> res{d, this->elems_};
 		if(this->req_grad_){
+			std::cout << "transpsoe ok" << std::endl;
 			res.enable_grad();
 			func_variant<T> fn = FunctionId<T>{};
 
@@ -290,18 +291,7 @@ public:
 
 		std::swap(d.extents[d1], d.extents[d2]);
 
-		Tensor<T> res(d, this->elems_);
-		if(this->req_grad_){
-			res.enable_grad();
-			func_variant<T> fn = FunctionId<T>{};
-
-			auto n = std::make_shared<Node<T>>(res);
-			n->grad_fn = fn;
-			n->set_inputs(*this);
-
-			res.set_node(n);
-		}
-		return res;
+		return Tensor<T>(d, this->elems_);
 	}
 
 	Tensor<const T> transpose() const{
@@ -602,7 +592,7 @@ private:
 template<typename T>
 template<typename U>
 Tensor<T>::Tensor(const Tensor<U>&x)
-	: elems_(x.size()), desc_(x.descriptor().extents), req_grad_(false) {
+	:  desc_(x.descriptor().extents), elems_(x.size()), req_grad_(false) {
 	static_assert(Convertible<U,T>(), "inconsistent types");
 	//std::copy(x.begin(), x.end(), this->begin());
 
@@ -745,6 +735,7 @@ Tensor<T> Tensor<T>::dimslice(const std::size_t n, const std::size_t m){
 	Tensor<T> res(ts, this->elems_);
 	if(this->req_grad_){
 		res.enable_grad();
+		std::cout << "dimslice yea" << std::endl;
 		
 		auto n = std::make_shared<Node<T>>(res);
 		func_variant<T> fn = FunctionId<T>{};
@@ -779,18 +770,9 @@ Tensor<const T> Tensor<T>::dimslice(const std::size_t n,
 	ts.start = this->desc_.start + m * this->desc_.strides[n];
 	ts.compute_size();
 
-	Tensor<T> res(ts, this->elems_);
-	if(this->req_grad_){
-		res.enable_grad();
-		func_variant<T> fn = FunctionId<T>{};
+	//Tensor<const T> res(ts, this->elems_);
 
-		auto n = std::make_shared<Node<T>>(res);
-		n->grad_fn = fn;
-		n->set_inputs(*this);
-
-		res.set_node(n);
-	}
-	return res;
+	return Tensor<const T>(ts, this->elems_);
 }
 
 template<typename T>
@@ -999,7 +981,7 @@ Tensor<T>::reshape(Args... args) {
 	std::vector<std::size_t> exts{static_cast<std::size_t>(args)...};
 	TensorSlice d{exts};
 
-	if(!this->desc_.is_contiguous()){
+	//if(!this->desc_.is_contiguous()){
 		Tensor<T> res(d);
 		auto rit = res.begin();
 		auto it = this->begin();
@@ -1013,6 +995,8 @@ Tensor<T>::reshape(Args... args) {
 			res.enable_grad();
 			func_variant<T> fn = FunctionId<T>{};
 
+			std::cout << "reshape 1 ok "<< std::endl;
+
 			auto n = std::make_shared<Node<T>>(res);
 			n->grad_fn = fn;
 			n->set_inputs(*this);
@@ -1021,7 +1005,8 @@ Tensor<T>::reshape(Args... args) {
 		}
 
 		return res;
-	}
+	//}
+	/*
 	else{
 		Tensor<T> res(d, this->elems_);
 
@@ -1029,6 +1014,7 @@ Tensor<T>::reshape(Args... args) {
 			res.enable_grad();
 			func_variant<T> fn = FunctionId<T>{};
 
+			std::cout << "reshape 2 ok "<< std::endl;
 			auto n = std::make_shared<Node<T>>(res);
 			n->grad_fn = fn;
 			n->set_inputs(*this);
@@ -1038,6 +1024,7 @@ Tensor<T>::reshape(Args... args) {
 
 		return res;
 	}
+	*/
 }
 
 template<typename T>
@@ -1067,34 +1054,10 @@ Tensor<T>::reshape(Args... args) const {
 			*it = elem;
 			++it;
 		}
-
-		if(this->req_grad_){
-			res.enable_grad();
-			func_variant<T> fn = FunctionId<T>{};
-
-			auto n = std::make_shared<Node<T>>(res);
-			n->grad_fn = fn;
-			n->set_inputs(*this);
-
-			res.set_node(n);
-		}
-
 		return res;
 	}
 	else{
 		Tensor<T> res(d, this->elems_);
-
-		if(this->req_grad_){
-			res.enable_grad();
-			func_variant<T> fn = FunctionId<T>{};
-
-			auto n = std::make_shared<Node<T>>(res);
-			n->grad_fn = fn;
-			n->set_inputs(*this);
-
-			res.set_node(n);
-		}
-		
 		return res;
 	}
 }

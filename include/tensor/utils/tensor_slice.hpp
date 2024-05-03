@@ -5,6 +5,7 @@
 #include<numeric>
 #include<cassert>
 #include<iostream>
+#include<type_traits>
 
 struct TensorSlice{
 	TensorSlice() : size(1), start(0) {}
@@ -43,6 +44,7 @@ struct TensorSlice{
 	//explicit TensorSlice(Dims... dims) : extents{static_cast<std::size_t>(dims)...}{
 	template<typename... Dims>
 	explicit TensorSlice(Dims... dims) : start{0}, extents(sizeof...(Dims)){
+		static_assert((std::is_integral<Dims>::value && ...), "dims must be integral types");
 		std::size_t args[sizeof...(Dims)] {std::size_t(dims)...};
 		std::copy(std::begin(args), std::end(args), extents.begin());
 		compute_strides();

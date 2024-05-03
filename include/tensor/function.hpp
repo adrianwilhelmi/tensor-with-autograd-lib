@@ -239,6 +239,40 @@ public:
 	}
 };
 
+template<typename T>
+class FunctionMatmul : public Function<FunctionMatmul<T>, T>{
+public:
+	using Function<FunctionMatmul<T>, T>::Function;
+
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			auto temp = inputs[1]->data;
+			temp.transpose_();
+
+			/*
+			inputs[0]->grads += tensor::matmul(grad, 
+					inputs[1]->data.transpose());
+			*/
+
+			inputs[0]->grads += tensor::matmul(grad, temp);
+			inputs[0]->backward();
+		}
+		if(inputs[1]->data.requires_grad()){
+			auto temp = inputs[0]->data;
+			temp.transpose_();
+
+			/*
+			inputs[1]->grads += tensor::matmul(
+					inputs[0]->data.transpose(),
+					grad);
+			*/
+
+			inputs[1]->grads += tensor::matmul(temp, grad);
+			inputs[1]->backward();
+		}
+	}
+};
+
 namespace function{
 	template<typename T>
 	bool same_type(const func_variant<T>& f1, const func_variant<T>& f2){

@@ -45,6 +45,8 @@ template<typename T>
 class FunctionTanh;
 template<typename T>
 class FunctionSigmoid;
+template<typename T>
+class FunctionMatmul;
 
 template<typename T>
 using func_variant = std::variant<
@@ -61,7 +63,8 @@ using func_variant = std::variant<
 	FunctionExp<T>,
 	FunctionRelu<T>,
 	FunctionTanh<T>,
-	FunctionSigmoid<T>
+	FunctionSigmoid<T>,
+	FunctionMatmul<T>
 >;
 
 template<typename T>
