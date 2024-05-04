@@ -56,6 +56,31 @@ int main(){
 	std::cout << longt.grad() << std::endl;
 	std::cout << t3.grad() << std::endl;
 
+	Tensor<double> rnd = tensor::random_normal(0.0, 1.0, 3, 5);
+	std::cout << rnd << std::endl;
+
+	Tensor<double> rndcd = tensor::random_normal(0.0, 1.0, rnd);
+	std::cout << rndcd << std::endl;
+
+	Tensor<float> rndber = tensor::random_bernoulli<float>(0.5, 10, 10);
+	std::cout << rndber << std::endl;
+
+	Tensor<int> eye = tensor::eye<int>(5);
+	std::cout << eye << std::endl;
+
+	Tensor<double> rnduni = tensor::random_uniform<double>(-1,
+							1, 2, 2);
+	std::cout << rnduni << std::endl;
+
+	std::cout << rnduni.softmax() << std::endl;
+	std::cout << "sum: " << rnduni.softmax().sum() << std::endl;
+
+	Tensor<std::size_t> rndmn = tensor::random_multinomial<std::size_t, double>(
+			rnduni.softmax(), 20);
+
+	std::cout << rndmn << std::endl;
+
+
 	//std::cout << mmres << std::endl;
 
 

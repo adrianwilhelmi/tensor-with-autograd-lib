@@ -1,6 +1,10 @@
 #ifndef TENSOR_OPS_HPP_
 #define TENSOR_OPS_HPP_
 
+#include<chrono>
+#include<random>
+
+#include"declarations.hpp"
 #include"storage.hpp"
 #include"tensor.hpp"
 #include"node.hpp"
@@ -27,6 +31,156 @@ namespace tensor{
 		}
 		return res;
 	}
+
+	template<typename T, typename... Exts>
+	Tensor<T> zeros(Exts... exts){
+		Tensor<T> res(exts...);
+		std::fill(res.elems.begin(), res.elems.end(), T{0});
+		return res;
+	}
+
+	template<typename T, typename... Exts>
+	Tensor<T> ones(const Exts... exts){
+		Tensor<T> res(exts...);
+		std::fill(res.elems.begin(), res.elems.end(), T{1});
+		return res;
+	}
+
+	template<typename T, typename... Exts>
+	Tensor<T> random_normal(const T mean, const T stddev, const Exts... exts){
+		Tensor<T> res(exts...);
+
+		auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		std::mt19937 gen(seed);
+		std::normal_distribution<T> dist(mean, stddev);
+
+		for(auto it = res.begin(); it != res.end(); ++it){
+			*it = dist(gen);
+		}
+
+		return res;
+	}
+
+	template<typename T>
+	Tensor<T> random_normal(const T mean, const T stddev, const Tensor<T>&t){
+		Tensor<T> res = t.copy_dims();
+
+		auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		std::mt19937 gen(seed);
+		std::normal_distribution<T> dist(mean, stddev);
+
+		for(auto it = res.begin(); it != res.end(); ++it){
+			*it = dist(gen);
+		}
+
+		return res;
+	}
+
+	template<typename T, typename... Exts>
+	Tensor<T> random_bernoulli(const double p, Exts... exts){
+		Tensor<T> res(exts...);
+
+		auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		std::mt19937 gen(seed);
+		std::bernoulli_distribution dist(p);
+
+		for(auto it = res.begin(); it != res.end(); ++it){
+			*it = dist(gen);
+		}
+
+		return res;
+	}
+
+	template<typename T>
+	Tensor<T> random_bernoulli(const double p, const Tensor<T>&t){
+		Tensor<T> res = t.copy_dims();
+
+		auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		std::mt19937 gen(seed);
+		std::bernoulli_distribution dist(p);
+
+		for(auto it = res.begin(); it != res.end(); ++it){
+			*it = dist(gen);
+		}
+
+		return res;
+	}
+
+	template<typename T, typename... Exts>
+	Tensor<T> random_uniform(const T min, const T max, const Exts... exts){
+		Tensor<T> res(exts...);
+
+		auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		std::mt19937 gen(seed);
+		std::uniform_real_distribution<T> dist(min, max);
+
+		for(auto it = res.begin(); it != res.end(); ++it){
+			*it = dist(gen);
+		}
+
+		return res;
+	}
+
+	template<typename T>
+	Tensor<T> random_uniform(const T min, const T max, const Tensor<T>& t){
+		Tensor<T> res = t.copy_dims();
+
+		auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		std::mt19937 gen(seed);
+		std::uniform_real_distribution<T> dist(min, max);
+
+		for(auto it = res.begin(); it != res.end(); ++it){
+			*it = dist(gen);
+		}
+
+		return res;
+	}
+
+	template<typename T, typename U>
+	Tensor<T> random_multinomial(const Tensor<U>& probs, 
+			std::size_t num_samples, bool replacement = true){
+		assert(probs.sum() >= U(0.99));
+		auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		std::mt19937 gen(seed);
+		
+		std::vector<double> weights(probs.size());
+
+		auto wit = weights.begin();
+		for(auto it = probs.begin(); it != probs.end(); ++it){
+			*wit = *it;
+			++wit;
+		}
+
+		Storage<std::size_t> counts(num_samples);
+
+		for(std::size_t i = 0; i < num_samples; ++i){
+			std::discrete_distribution<> dist(weights.begin(), 
+							weights.end());
+			int index = dist(gen);
+			counts[i] = index;
+
+			if(!replacement)
+				weights[index] = 0;
+		}
+
+		std::vector<std::size_t> exts = {num_samples};
+		TensorSlice d(exts);
+
+		return Tensor<std::size_t>(d, counts);
+	}
+
+	template<typename T>
+	Tensor<T> eye(const std::size_t n){
+		Tensor<T> res(n, n);
+		res.diag().fill(T(1));
+		return res;
+	}
+
+
+
+
+
+
 
 	template<typename T>
 	Tensor<T> concat(Tensor<T>& t1, Tensor<T>& t2, std::size_t dim){

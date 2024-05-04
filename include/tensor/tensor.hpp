@@ -73,9 +73,9 @@ public:
 		this->node = nullptr;
 	}
 
-	Tensor<T> copy_dims(){
+	Tensor<T> copy_dims() const{
 		Storage<T> elems(this->elems_.size());
-		TensorSlice d = this->desc_;
+		TensorSlice d(this->desc_.extents);
 		return{d, elems};
 	}
 
@@ -497,6 +497,17 @@ public:
 
 		return res;
 	}
+
+	Tensor<const T> softmax() const {
+		Tensor<const T> res(*this);
+		T max = res.max();
+		res.apply([&](T& a) {a = std::exp(a - max);});
+		T sum = res.sum();
+		res.apply([&](T&a) {a /= sum;});
+
+		return res;
+	}
+
 
 	//in-place
 	Tensor<T>& pow_(Tensor<T>& exps){
