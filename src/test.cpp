@@ -82,10 +82,22 @@ int main(){
 	std::cout << rndmn << std::endl;
 
 
-	const std::string file = "./src/four.png";
-	Tensor<float> four = tensor::from_image<float>(file);
+	const std::string fr = "./src/four.png";
+	Tensor<float> four = tensor::from_image<float>(fr);
 
-	std::cout << four.dimslice(0,0) << std::endl;
+	const std::string trll = "./src/trll.jpeg";
+	Tensor<float> troll = tensor::from_image<float>(trll);
+
+	//std::cout << four.dimslice(0,0) << std::endl;
+
+	const std::string fr2 = "./src/four2.png";
+	tensor::to_image<float>(four, fr2);
+
+	const std::string trll2 = "./src/trll2.jpeg";
+	tensor::to_image<float>(troll, trll2);
+
+
+	
 	//std::cout << four.dimslice(0,1) << std::endl;
 
 

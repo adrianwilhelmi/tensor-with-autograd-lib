@@ -44,32 +44,30 @@ namespace tensor{
 		cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
 
 		if(std::is_same<T, float>::value){
-			image.convertTo(image, CV_32F, 1/255.0);
+			image.convertTo(image, CV_32FC3, 1/255.0f);
+		}
+		else if(std::is_same<T, int>::value){
+			image.convertTo(image, CV_32SC3);
 		}
 		else{
-			if(!std::is_same<T, int>::value){
-				throw std::runtime_error("must be float or int");
-			}
+			throw std::runtime_error("must be float or int");
 		}
 
 		Tensor<T> tensor_img(3, image.rows, image.cols);
-		//tensor_img[0] -> red
-		//tensor_img[1] -> green
-		//tensor_img[2] -> blue
-		
+
 		for(auto y = 0; y < image.rows; ++y){
 			for(auto x = 0; x < image.cols; ++x){
 				//implement
-				cv::Vec3b color = image.at<cv::Vec3b>(y,x);
-				tensor_img(0, y, x) = static_cast<T>(color[0]);
+				cv::Vec3f color = image.at<cv::Vec3f>(y,x);
+
+				tensor_img(0, y, x) = static_cast<T>(color[2]);
 				tensor_img(1, y, x) = static_cast<T>(color[1]);
-				tensor_img(2, y, x) = static_cast<T>(color[2]);
+				tensor_img(2, y, x) = static_cast<T>(color[0]);
 			}
 		}
 
 		return tensor_img;
 	}
-
 
 	template<typename T, typename... Exts>
 	Tensor<T> zeros(Exts... exts){
@@ -282,6 +280,52 @@ namespace tensor{
 
 		return res;
 	}
+
+	template<typename T>
+	void to_image(const Tensor<T>& tensor, const std::string& filepath){
+		if(tensor.order() != 3 || tensor.extent(0) != 3){
+			throw std::runtime_error("this tensor doesnt represent an image");
+		}
+
+		std::size_t height = tensor.extent(1);
+		std::size_t width = tensor.extent(2);
+
+		cv::Mat image(height, width, CV_32FC3);
+		//auto type = std::is_same<T,float>::value ? CV_32FC3 : CV_8UC3;
+
+		//auto mul = std::is_same<T,float>::value ? 255.0f : 1;
+
+		for(std::size_t y = 0; y < height; ++y){
+			for(std::size_t x = 0; x < width; ++x){
+				cv::Vec3f color = {
+					tensor(2,y,x),
+					tensor(1,y,x),
+					tensor(0,y,x)
+				};
+				image.at<cv::Vec3f>(y,x) = color;
+			}
+		}
+
+		if(std::is_same<T, float>::value){
+			image.convertTo(image, CV_8UC3, 255.0f);
+		}
+		else if(std::is_same<T,int>::value){
+			image.convertTo(image, CV_8UC3);
+		}
+
+		cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
+		cv::imwrite(filepath, image);
+	}
+
+
+
+
+
+
+
+
+
+
 
 	template<typename T>
 	T dot(const Tensor<T>& t1, const Tensor<T>& t2){
