@@ -1,3 +1,4 @@
+#include<string>
 #include<iostream>
 
 #include"tensor_lib.hpp"
@@ -79,6 +80,13 @@ int main(){
 			rnduni.softmax(), 20);
 
 	std::cout << rndmn << std::endl;
+
+
+	const std::string file = "./src/four.png";
+	Tensor<float> four = tensor::from_image<float>(file);
+
+	std::cout << four.dimslice(0,0) << std::endl;
+	//std::cout << four.dimslice(0,1) << std::endl;
 
 
 	//std::cout << mmres << std::endl;

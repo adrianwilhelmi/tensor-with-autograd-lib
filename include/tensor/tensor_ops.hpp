@@ -4,6 +4,8 @@
 #include<chrono>
 #include<random>
 
+#include<opencv2/opencv.hpp>
+
 #include"declarations.hpp"
 #include"storage.hpp"
 #include"tensor.hpp"
@@ -31,6 +33,43 @@ namespace tensor{
 		}
 		return res;
 	}
+
+	template<typename T>
+	Tensor<T> from_image(const std::string& filepath){
+		cv::Mat image = cv::imread(filepath, cv::IMREAD_COLOR);
+		if(image.empty()){
+			throw std::runtime_error("couldnt open or find the image");
+		}
+
+		cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
+
+		if(std::is_same<T, float>::value){
+			image.convertTo(image, CV_32F, 1/255.0);
+		}
+		else{
+			if(!std::is_same<T, int>::value){
+				throw std::runtime_error("must be float or int");
+			}
+		}
+
+		Tensor<T> tensor_img(3, image.rows, image.cols);
+		//tensor_img[0] -> red
+		//tensor_img[1] -> green
+		//tensor_img[2] -> blue
+		
+		for(auto y = 0; y < image.rows; ++y){
+			for(auto x = 0; x < image.cols; ++x){
+				//implement
+				cv::Vec3b color = image.at<cv::Vec3b>(y,x);
+				tensor_img(0, y, x) = static_cast<T>(color[0]);
+				tensor_img(1, y, x) = static_cast<T>(color[1]);
+				tensor_img(2, y, x) = static_cast<T>(color[2]);
+			}
+		}
+
+		return tensor_img;
+	}
+
 
 	template<typename T, typename... Exts>
 	Tensor<T> zeros(Exts... exts){
@@ -175,11 +214,6 @@ namespace tensor{
 		res.diag().fill(T(1));
 		return res;
 	}
-
-
-
-
-
 
 
 	template<typename T>
