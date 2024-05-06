@@ -23,7 +23,7 @@ struct Node{
 		this->grads = g;
 	}
 
-	Node(Tensor<T>& res) : grads(res.size()), grad_fn(FunctionEmpty<T>{}) {
+	Node(Tensor<T>& res) : grads(res.copy_dims()), grad_fn(FunctionEmpty<T>{}) {
 		res.share(this->data);
 		if(res.requires_grad()){
 			//this->init_grad();

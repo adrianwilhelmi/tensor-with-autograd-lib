@@ -176,7 +176,9 @@ namespace tensor{
 	template<typename T, typename U>
 	Tensor<T> random_multinomial(const Tensor<U>& probs, 
 			std::size_t num_samples, bool replacement = true){
-		assert(probs.sum() >= U(0.99));
+		if(probs.sum() < U(0.99)){
+			throw std::runtime_error("probabilities doesnt sum to 1");
+		}
 		auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 		std::mt19937 gen(seed);
 		
@@ -211,6 +213,22 @@ namespace tensor{
 		Tensor<T> res(n, n);
 		res.diag().fill(T(1));
 		return res;
+	}
+
+
+	template<typename T>
+	bool nearly_equal(const Tensor<T>& t1, const Tensor<T>& t2){
+		double epsilon = 0.02;
+		auto it2 = t2.begin();
+		if(same_extents(t1.descriptor(), t2.descriptor())){
+			for(auto it1 = t1.begin(); it1 != t1.end(); ++it1){
+				if(std::abs(*it1 - *it2) > epsilon)
+					return false;
+				++it2;
+			}
+			return true;
+		}
+		return false;
 	}
 
 
@@ -390,6 +408,7 @@ namespace tensor{
 	}
 
 }; //namespace tensor
+
 
 template<typename M1, typename M2>
 inline Enable_if<Tensor_type<M1>() && Tensor_type<M2>(), bool> operator==(

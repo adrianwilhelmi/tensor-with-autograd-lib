@@ -280,7 +280,6 @@ public:
 		*/
 
 		if(this->req_grad_){
-			std::cout << "transpsoe ok" << std::endl;
 			res.enable_grad();
 			func_variant<T> fn = FunctionId<T>{};
 
@@ -564,6 +563,8 @@ public:
 
 	const Tensor<T>& grad() const{
 		if(!req_grad_ || !this->node){
+			std::cout << "req_grad_ = " << req_grad_ << std::endl;
+			std::cout << "(this->node == nullptr) = " << !this->node << std::endl;
 			throw std::runtime_error("grad is off");
 		}
 		return this->node->grads;
@@ -762,7 +763,6 @@ Tensor<T> Tensor<T>::dimslice(const std::size_t n, const std::size_t m){
 	Tensor<T> res(ts, this->elems_);
 	if(this->req_grad_){
 		res.enable_grad();
-		std::cout << "dimslice yea" << std::endl;
 		
 		auto n = std::make_shared<Node<T>>(res);
 		func_variant<T> fn = FunctionId<T>{};
@@ -1022,8 +1022,6 @@ Tensor<T>::reshape(Args... args) {
 			res.enable_grad();
 			func_variant<T> fn = FunctionId<T>{};
 
-			std::cout << "reshape 1 ok "<< std::endl;
-
 			auto n = std::make_shared<Node<T>>(res);
 			n->grad_fn = fn;
 			n->set_inputs(*this);
@@ -1041,7 +1039,6 @@ Tensor<T>::reshape(Args... args) {
 			res.enable_grad();
 			func_variant<T> fn = FunctionId<T>{};
 
-			std::cout << "reshape 2 ok "<< std::endl;
 			auto n = std::make_shared<Node<T>>(res);
 			n->grad_fn = fn;
 			n->set_inputs(*this);

@@ -73,7 +73,7 @@ private:
 	void decrement();
 
 	void adjust_pointer_for_end(){
-		ptr = begin + desc.start;
+		ptr = begin + desc.start + 1;
 		for(std::size_t i = 0; i < desc.extents.size(); ++i){
 			ptr += desc.strides[i] * (desc.extents[i] - 1);
 		}
@@ -92,8 +92,8 @@ TensorIterator<T>::TensorIterator(const TensorSlice&s, T*base, bool limit)
 	: begin(base), index(s.extents.size()), desc(s) {
 	std::fill(index.begin(), index.end(), 0);
 
-	/*
 	ptr = base + desc.start;
+	/*
 
 	if(limit){
 		for(std::size_t i = 0; i < s.extents.size(); ++i){
@@ -107,11 +107,29 @@ TensorIterator<T>::TensorIterator(const TensorSlice&s, T*base, bool limit)
 	if(s.size != 0)
 		index[0] = desc.extents[0];
 
+
 	this->end = base + s.offset(index);
 	this->begin = base + s.start;
 
+	/*
+	std::cout << "s.offset(index): " << s.offset(index) << std::endl;
+
+	std::cout << "begin" << begin << std::endl;
+	std::cout << "end" << end << std::endl;
+	std::cout << "end - begin = " << end - begin << std::endl;
+	*/
+
 	if(limit){
-		ptr = this->end;
+
+		if(!s.is_contiguous()){
+			for(std::size_t i = 0; i < s.extents.size(); ++i){
+				index[i] = s.extents[i];
+			}
+			adjust_pointer_for_end();
+		}
+		else{
+			ptr = this->end;
+		}
 	}
 	else{
 		ptr = this->begin;

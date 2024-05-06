@@ -83,24 +83,13 @@ struct TensorSlice{
 		return offset(idx);
 	}
 
-	bool is_contiguous(){
+	bool is_contiguous() const{
 		for(std::size_t i = 1; i < strides.size(); ++i){
 			if(strides[i] > strides[i - 1])
 				return false;
 		}
 		return true;
 	}
-
-	/*
-	void fixup(){
-		for(std::size_t i = 1; i < strides.size(); ++i){
-			if(strides[i] > strides[i - 1]){
-				std::swap(strides[i], strides[i-1]);
-				std::swap(extents[i], extents[i-1]);
-			}
-		}
-	}
-	*/
 
 	std::size_t size;
 	std::size_t start;

@@ -247,6 +247,7 @@ public:
 	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
 			auto temp = inputs[1]->data;
+
 			temp.transpose_();
 
 			/*

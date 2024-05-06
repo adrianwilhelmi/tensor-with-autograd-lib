@@ -164,9 +164,98 @@ TEST(TensorTest, 0DimTensor){
 	EXPECT_EQ(s2.grad(), s1);
 }
 
+TEST(TensorTest, TensorImageConversionFloat){
+	const std::string four_path = "./test/photos/four.png";
+	Tensor<float> four = tensor::from_image<float>(four_path);
+
+	const std::string troll_path = "./test/photos/trll.jpeg";
+	Tensor<float> troll = tensor::from_image<float>(troll_path);
+
+	const std::string four_path2 = "./test/photos/four2.png";
+	tensor::to_image<float>(four, four_path2);
+
+	const std::string troll_path2 = "./test/photos/troll2.png";
+	tensor::to_image<float>(troll, troll_path2);
+
+	Tensor<float> four2 = tensor::from_image<float>(four_path2);
+
+	Tensor<float> troll2 = tensor::from_image<float>(troll_path2);
 
 
+	ASSERT_TRUE(tensor::nearly_equal(troll2, troll));
+	ASSERT_TRUE(tensor::nearly_equal(four2, four));
+}
 
+TEST(TensorTest, RandomConstructorAndSoftmax){
+	Tensor<double> rnd = tensor::random_normal(0.0, 1.0, 4, 4);
+	Tensor<double> rnds = rnd.softmax();
+
+	ASSERT_TRUE(rnds.sum() >= 0.99);
+}
+
+TEST(TensorTest, TransposeTest){
+	Tensor<double> t2 = tensor::from_list<double,2>({
+		{1, 5, 2},
+		{1, 4, 16},
+		{1, 10, 32},
+		{31, 12, 3},
+	}, true);
+
+	Tensor<double> t2tok = tensor::from_list<double,2>({
+		{1, 1, 1, 31},
+		{5, 4, 10, 12},
+		{2, 16, 32, 3}
+	}, true);
+
+	auto t2t = t2.transpose();
+
+	ASSERT_TRUE(t2tok == t2t);
+}
+
+
+TEST(TensorTest, TranspositionReshapeGradient){
+	Tensor<double> t3 = tensor::from_list<double,2>({
+		{1, 2, 3},
+		{15, 44, 3},
+		{31, 12, 3},
+		{31, 12, 3},
+	}, false);
+
+	Tensor<double> t2 = tensor::from_list<double,2>({
+		{1, 5, 2},
+		{1, 4, 16},
+		{1, 10, 32},
+		{31, 12, 3},
+	}, false);
+
+	Tensor<double> t3dt(2,4,3);
+
+	t3dt.dimslice(0,0) += t2;
+	t3dt.dimslice(0,1) += t2 * t3;
+
+	Tensor<double> t3d = t3dt.transpose(1, 2);
+
+	t3d.enable_grad();
+
+	Tensor<double> twos = t3d.copy_dims();
+	twos.fill(2.0);
+	twos.enable_grad();
+
+	Tensor<double> t3d2 = t3d * twos;
+
+
+	Tensor<double> t2d = t3d2.reshape(
+			t3d2.extent(0) * t3d2.extent(1),
+			t3d2.extent(2)
+			);
+
+	Tensor<double> t2dt = t2d.transpose();
+
+	t2dt.backward();
+
+	ASSERT_EQ(t3d.grad(), twos);
+	ASSERT_EQ(t3d, twos.grad());
+}
 
 
 #endif
