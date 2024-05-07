@@ -37,8 +37,31 @@ public:
 	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		for(auto&node_ptr : inputs){
 			if(node_ptr->data.requires_grad()){
+
+				/*
+				std::cout << "grad" << std::endl;
+				std::cout << grad << std::endl;
+
+				std::cout << "node_ptr->grads() " << std::endl;
+				std::cout << node_ptr->grads() << std::endl;
+
+				std::cout << "node_ptr->grads(grad.descriptor()) " << std::endl;
+				std::cout << node_ptr->grads(grad.descriptor()) << std::endl;
+				*/
+
+				
 				node_ptr->grads(grad.descriptor()) += grad;
+
+				/*
+				std::cout << "node_ptr->grads(grad.descriptor()) " << std::endl;
+				std::cout << node_ptr->grads(grad.descriptor()) << std::endl;
+
+				std::cout << "node_ptr->grads() " << std::endl;
+				std::cout << node_ptr->grads() << std::endl;
+				*/
+
 				node_ptr->backward();
+
 			}
 		}
 	}
@@ -52,6 +75,7 @@ public:
 	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		for(auto&node_ptr : inputs){
 			if(node_ptr->data.requires_grad()){
+
 				node_ptr->grads += grad(node_ptr->grads.descriptor());
 				node_ptr->backward();
 			}

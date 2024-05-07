@@ -92,18 +92,6 @@ TensorIterator<T>::TensorIterator(const TensorSlice&s, T*base, bool limit)
 	: begin(base), index(s.extents.size()), desc(s) {
 	std::fill(index.begin(), index.end(), 0);
 
-	ptr = base + desc.start;
-	/*
-
-	if(limit){
-		for(std::size_t i = 0; i < s.extents.size(); ++i){
-			index[i] = s.extents[i];
-		}
-		adjust_pointer_for_end();
-	}
-	*/
-
-
 	if(s.size != 0)
 		index[0] = desc.extents[0];
 
@@ -111,15 +99,8 @@ TensorIterator<T>::TensorIterator(const TensorSlice&s, T*base, bool limit)
 	this->end = base + s.offset(index);
 	this->begin = base + s.start;
 
-	/*
-	std::cout << "s.offset(index): " << s.offset(index) << std::endl;
-
-	std::cout << "begin" << begin << std::endl;
-	std::cout << "end" << end << std::endl;
-	std::cout << "end - begin = " << end - begin << std::endl;
-	*/
-
 	if(limit){
+		//ptr = this->end;
 
 		if(!s.is_contiguous()){
 			for(std::size_t i = 0; i < s.extents.size(); ++i){

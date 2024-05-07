@@ -68,14 +68,15 @@ public:
 	}
 
 	Tensor(const TensorSlice& d)
-		: desc_(d), elems_(d.size), 
+		: desc_(d.extents), elems_(d.size), 
 		req_grad_(false) {
 		this->node = nullptr;
 	}
 
 	Tensor<T> copy_dims() const{
 		Storage<T> elems(this->elems_.size());
-		TensorSlice d(this->desc_.extents);
+		//TensorSlice d(this->desc_.extents);
+		TensorSlice d(this->desc_);
 		return{d, elems};
 	}
 
@@ -114,7 +115,19 @@ public:
 	Enable_if<tensor_impl::Requesting_element<Args...>(), const T&>
 	operator()(Args... args) const;
 
-	Tensor<T> operator()(TensorSlice d) {return {d, this->elems_};}
+	Tensor<T> operator()(const TensorSlice& d) {return {d, this->elems_};}
+	Tensor<const T> operator()(const TensorSlice& d) const {return {d, this->elems_};}
+
+	/*
+	Tensor<T> operator()(const TensorSlice& d) {
+		TensorSlice desc(d.extents);
+		return {desc, this->elems_};
+	}
+	Tensor<const T> operator()(const TensorSlice& d) const {
+		TensorSlice desc(d.extents);
+		return {desc, this->elems_};
+	}
+	*/
 
 	T& item() {return elems_[desc_.start];}
 	const T& item() const {return elems_[desc_.start];}
@@ -264,12 +277,10 @@ public:
 
 		Tensor<T> res{d, this->elems_};
 
-		/*
-		std::vector<std::size_t> exts = this->desc_.extents;
-		std::swap(exts[d1], exts[d2]);
-		TensorSlice d{exts};
 
-		Tensor<T> res(d);
+		/*
+		Tensor<T> res = this->copy_dims();
+
 		auto rit = res.begin();
 		auto it = this->begin();
 		for(std::size_t i = 0; i < this->size(); ++i){
@@ -277,11 +288,14 @@ public:
 			++it;
 			++rit;
 		}
+
+		res.transpose_();
 		*/
+
 
 		if(this->req_grad_){
 			res.enable_grad();
-			func_variant<T> fn = FunctionId<T>{};
+			func_variant<T> fn = FunctionConcat<T>{};
 
 			auto n = std::make_shared<Node<T>>(res);
 			n->grad_fn = fn;
@@ -570,14 +584,14 @@ public:
 		return this->node->grads;
 	}
 
-	Tensor<T>& grad(TensorSlice d){
+	Tensor<T> grad(const TensorSlice& d){
 		if(!req_grad_ || !this->node){
 			throw std::runtime_error("grad(TensorSlice): grad is off");
 		}
 		return this->node->grads(d);
 	}
 
-	const Tensor<T>& grad(TensorSlice d) const{
+	const Tensor<T>& grad(const TensorSlice& d) const{
 		if(!req_grad_ || !this->node){
 			throw std::runtime_error("grad(): grad is off");
 		}

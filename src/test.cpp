@@ -68,22 +68,36 @@ int main(){
 	Tensor<double> t3d2 = t3d * twos;
 
 	std::cout << t3d2 << std::endl;
+	std::cout << t3d2.descriptor() << std::endl;
+
+	/*
+	Tensor<double> t2d = t3d2.reshape(
+			t3d2.extent(0) * t3d2.extent(1),
+			t3d2.extent(2)
+			).dimslices(1,1,2);
+			*/
 
 	Tensor<double> t2d = t3d2.reshape(
 			t3d2.extent(0) * t3d2.extent(1),
 			t3d2.extent(2)
 			);
 
-	std::cout << t2d << std::endl;
 
-	t2d.backward();
+
+	Tensor<double> t2dt = t2d.transpose(0,1);
+
+	t2dt.backward();
+
+	std::cout << t2dt << std::endl;
+	std::cout << t2dt.grad() << std::endl;
+
+	std::cout << t2d << std::endl;
+	std::cout << t2d.grad() << std::endl;
+
 
 	std::cout << t3d.grad() << std::endl;
 	std::cout << twos.grad() << std::endl;
 	std::cout << t3d << std::endl;
-
-
-
 
 
 

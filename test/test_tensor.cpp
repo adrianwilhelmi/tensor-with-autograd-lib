@@ -212,28 +212,27 @@ TEST(TensorTest, TransposeTest){
 	ASSERT_TRUE(t2tok == t2t);
 }
 
-
 TEST(TensorTest, TranspositionReshapeGradient){
 	Tensor<double> t3 = tensor::from_list<double,2>({
 		{1, 2, 3},
 		{15, 44, 3},
 		{31, 12, 3},
 		{31, 12, 3},
-	}, false);
+	}, true);
 
 	Tensor<double> t2 = tensor::from_list<double,2>({
 		{1, 5, 2},
 		{1, 4, 16},
 		{1, 10, 32},
 		{31, 12, 3},
-	}, false);
+	}, true);
 
-	Tensor<double> t3dt(2,4,3);
+	Tensor<double> t3d(2,4,3);
 
-	t3dt.dimslice(0,0) += t2;
-	t3dt.dimslice(0,1) += t2 * t3;
+	t3d.dimslice(0,0) += t2;
+	t3d.dimslice(0,1) += t2 * t3;
 
-	Tensor<double> t3d = t3dt.transpose(1, 2);
+	t3d.transpose_(1, 2);
 
 	t3d.enable_grad();
 
@@ -243,18 +242,18 @@ TEST(TensorTest, TranspositionReshapeGradient){
 
 	Tensor<double> t3d2 = t3d * twos;
 
-
 	Tensor<double> t2d = t3d2.reshape(
 			t3d2.extent(0) * t3d2.extent(1),
 			t3d2.extent(2)
 			);
 
-	Tensor<double> t2dt = t2d.transpose();
+
+	Tensor<double> t2dt = t2d.transpose(0,1);
 
 	t2dt.backward();
 
-	ASSERT_EQ(t3d.grad(), twos);
-	ASSERT_EQ(t3d, twos.grad());
+	ASSERT_EQ(twos.grad(), t3d);
+	ASSERT_EQ(twos, t3d.grad());
 }
 
 
