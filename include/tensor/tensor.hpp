@@ -45,6 +45,15 @@ public:
 
 		this->node = nullptr;
 	}
+	Tensor(const std::size_t size) 
+		: desc_({size}), elems_(size), node(nullptr), req_grad_(false){
+			/*
+		for(std::size_t i = 0; i < size; ++i){
+		
+		}
+		*/
+		this->desc_.size = size;
+	}
 
 	Tensor&operator=(Tensor&&) = default;
 	Tensor&operator=(Tensor&x){

@@ -35,6 +35,23 @@ int main(){
 	std::cout << t2tok << std::endl;
 	std::cout << t2tt << std::endl;
 
+	Tensor<bool> oh = tensor::one_hot(t2);
+
+	std::cout << oh << std::endl;
+
+	Tensor<int> ta1 = tensor::arange<int>(0, 10, 1);
+	Tensor<int> ta2 = tensor::arange<int>(10, 20, 4);
+
+	Tensor<bool> oh1 = tensor::one_hot(ta1);
+	Tensor<bool> oh2 = tensor::one_hot(ta2);
+
+	std::cout << ta1 << std::endl;
+	std::cout << oh1 << std::endl;
+
+	std::cout << ta2 << std::endl;
+	std::cout << oh2 << std::endl;
+
+
 	/*
 	std::cout << "t2ok" << std::endl;
 	for(auto it = t2tok.begin(); it != t2tok.end(); ++it){
@@ -47,58 +64,6 @@ int main(){
 	}
 
 	*/
-
-	Tensor<double> t3d(2,4,3);
-
-	t3d.dimslice(0,0) += t2;
-	t3d.dimslice(0,1) += t2 * t3;
-
-	std::cout << t3d << std::endl;
-
-	t3d.transpose_(1, 2);
-
-	t3d.enable_grad();
-
-	std::cout << t3d << std::endl;
-
-	Tensor<double> twos = t3d.copy_dims();
-	twos.fill(2.0);
-	twos.enable_grad();
-
-	Tensor<double> t3d2 = t3d * twos;
-
-	std::cout << t3d2 << std::endl;
-	std::cout << t3d2.descriptor() << std::endl;
-
-	/*
-	Tensor<double> t2d = t3d2.reshape(
-			t3d2.extent(0) * t3d2.extent(1),
-			t3d2.extent(2)
-			).dimslices(1,1,2);
-			*/
-
-	Tensor<double> t2d = t3d2.reshape(
-			t3d2.extent(0) * t3d2.extent(1),
-			t3d2.extent(2)
-			);
-
-
-
-	Tensor<double> t2dt = t2d.transpose(0,1);
-
-	t2dt.backward();
-
-	std::cout << t2dt << std::endl;
-	std::cout << t2dt.grad() << std::endl;
-
-	std::cout << t2d << std::endl;
-	std::cout << t2d.grad() << std::endl;
-
-
-	std::cout << t3d.grad() << std::endl;
-	std::cout << twos.grad() << std::endl;
-	std::cout << t3d << std::endl;
-
 
 
 	/*

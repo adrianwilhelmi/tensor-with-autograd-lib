@@ -69,6 +69,45 @@ namespace tensor{
 		return tensor_img;
 	}
 
+	template<typename T>
+	Tensor<T> from_video(const std::string& filepath){
+		cv::VideoCapture cap(filepath);
+		if(!cap.isOpened()){
+			throw std::runtime_error("couldnt open or find the video file");
+		}
+
+		auto num_frames = cap.get(cv::CAP_PROP_FRAME_COUNT);
+		auto frame_height = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+		auto frame_width = cap.get(cv::CAP_PROP_FRAME_WIDTH);
+
+		Tensor<T> tensor_vid(3, num_frames, frame_height, frame_width);
+
+		cv::Mat frame;
+		int frame_idx = 0;
+		while(cap.read(frame)){
+			if(std::is_same<T, float>::value){
+				frame.convertTo(frame, CV_32FC3, 1/255.0f);
+			}
+			else if(std::is_same<T, int>::value){
+				frame.convertTo(frame, CV_32SC3);
+			}
+
+			cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+
+			for(auto y = 0; y < frame.rows; ++y){
+				for(auto x = 0; x < frame.cols; ++x){
+					cv::Vec3f color = frame.at<cv::Vec3f>(y,x);
+					tensor_vid(0, frame_idx, y, x) = color[0];
+					tensor_vid(1, frame_idx, y, x) = color[1];
+					tensor_vid(2, frame_idx, y, x) = color[2];
+				}
+			}
+			++frame_idx;
+		}
+
+		return tensor_vid;
+	}
+
 	template<typename T, typename... Exts>
 	Tensor<T> zeros(Exts... exts){
 		Tensor<T> res(exts...);
@@ -215,6 +254,46 @@ namespace tensor{
 		return res;
 	}
 
+	template<typename T>
+	Tensor<T> arange(const T start, 
+			const T end,
+			const T step = 1){
+		if(step == 0){
+			throw std::invalid_argument("step = 0");
+		}
+
+		std::size_t size = static_cast<std::size_t>(
+				std::ceil(static_cast<double>(end - start) / step));
+		TensorSlice d({size});
+
+		Storage<T> elems(size);
+
+		T val = (T) start;
+		for(auto& elem : elems){
+			elem = val;
+			val += (T) step;
+		}
+
+		return {d, elems};
+	}
+
+	template<typename T, typename U = bool>
+	Tensor<U> one_hot(const Tensor<T>& t, std::size_t num_classes = 0){
+		if(num_classes == 0){
+			num_classes = t.max();
+		}
+
+		Tensor<T> res(t.size(), num_classes + 1);
+
+		auto it = t.begin();
+		for(std::size_t i = 0; i < t.size(); ++i){
+			res(i, static_cast<std::size_t>(*it) % (num_classes + 1)) = 1;
+			++it;
+		}
+		
+		return res;
+	}
+
 
 	template<typename T>
 	bool nearly_equal(const Tensor<T>& t1, const Tensor<T>& t2){
@@ -333,6 +412,42 @@ namespace tensor{
 
 		cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
 		cv::imwrite(filepath, image);
+	}
+
+	template<typename T>
+	void to_video(const Tensor<T>& tensor, const std::string& filepath){
+		if(tensor.order() != 4 || tensor.extent(0) != 3){
+			throw std::runtime_error("this tensor doesnt represent a video");
+		}
+
+		auto num_frames = tensor.extent(0);
+		auto height = tensor.extent(2);
+		auto width = tensor.extent(3);
+
+		cv::VideoWriter writer(filepath, cv::VideoWriter::fourcc('M','J','P','G'), 30, cv::Size(width, height), true);
+
+		for(auto i = 0; i < num_frames; ++i){
+			cv::Mat frame(height, width, CV_32FC3);
+			for(auto y = 0; y < height; ++y){
+				for(auto x = 0; x < width; ++x){
+					cv::Vec3f color = {
+						tensor(2, i, y, x),
+						tensor(1, i, y, x),
+						tensor(0, i, y, x)
+					};
+					frame.at<cv::Vec3f>(y,x) = color;
+				}
+			}
+
+			if(std::is_same<T, float>::value){
+				frame.convertTo(frame, CV_8UC3, 255.0);
+			}
+			else if(std::is_same<T,int>::value){
+				frame.convertTo(frame, CV_8UC3);
+			}
+			cv::cvtColor(frame, frame, cv::COLOR_RGB2BGR);
+			writer.write(frame);
+		}
 	}
 
 

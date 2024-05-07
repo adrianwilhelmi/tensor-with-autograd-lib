@@ -256,5 +256,19 @@ TEST(TensorTest, TranspositionReshapeGradient){
 	ASSERT_EQ(twos, t3d.grad());
 }
 
+TEST(TestTensor, TestArange){
+	Tensor<int> ta1 = tensor::arange<int>(0, 10, 1);
+	Tensor<int> ta2 = tensor::arange<int>(10, 20, 4);
+
+	Tensor<int> ok1 = tensor::from_list<int,1>({
+			0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, false);
+
+	Tensor<int> ok2 = tensor::from_list<int,1>({
+			10, 14, 18}, false);
+
+	ASSERT_EQ(ta1, ok1);
+	ASSERT_EQ(ta2, ok2);
+}
+
 
 #endif
