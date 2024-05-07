@@ -157,8 +157,9 @@ std::ostream&operator<<(std::ostream&os, const Storage<T>&s){
 }
 
 namespace storage{
-	template<typename T>
-	bool same_storage(const Storage<T>&a, const Storage<T>&b){
+	template<typename T, typename U>
+	bool same_storage(const Storage<T>&a, const Storage<U>&b){
+		static_assert(Convertible<U,T>(), "inconsistent types");
 		return a.data() == b.data();
 	}
 

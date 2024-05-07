@@ -13,8 +13,8 @@
 #include"utils/tensor_utils.hpp"
 
 namespace tensor{
-	template<typename T>
-	bool same_storage(const Tensor<T>&t1, const Tensor<T>&t2){
+	template<typename T, typename U>
+	bool same_storage(const Tensor<T>&t1, const Tensor<U>&t2){
 		return t1.data() == t2.data();
 	}
 
@@ -212,7 +212,7 @@ namespace tensor{
 		return res;
 	}
 
-	template<typename T, typename U>
+	template<typename U, typename T = std::size_t>
 	Tensor<T> random_multinomial(const Tensor<U>& probs, 
 			std::size_t num_samples, bool replacement = true){
 		if(probs.sum() < U(0.99)){
