@@ -271,8 +271,11 @@ public:
 
 	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
-			inputs[0]->grads += tensor::conv2d(grad, 
-						inputs[1]->data.rot180());
+			auto temp = inputs[1]->data;
+			for(std::size_t i = 0; i < temp.extent(0); ++i){
+				temp.dimslice(0,i).rot180_();
+			}
+			inputs[0]->grads += tensor::conv2d(grad, temp);
 			inputs[0]->backward();
 		}
 		if(inputs[1]->data.requires_grad()){

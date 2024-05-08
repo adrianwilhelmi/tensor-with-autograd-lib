@@ -64,38 +64,11 @@ int main(){
 	std::cout << cs.dimslice(1,2) - 1 << std::endl;
 
 
-
-
-	std::cout << t2 << std::endl;
-	
-	auto t2r = t2.rot90();
-	std::cout << t2r << std::endl;
-
-	auto t2r2 = t2.rot180();
-	std::cout << t2r2 << std::endl;
-
-	t2r2.rot180_();
-
-	std::cout << t2r2 << std::endl;
-
-	std::cout << t2 << std::endl;
-
-
-	/*
-	t2r.rot90_();
-
-	std::cout << t2r << std::endl;
-	*/
-
-
-
-
-
-
-	/*
 	const std::string face = "./test/photos/trll.jpeg";
 
 	auto facet = tensor::from_image<float>(face);
+
+	facet.enable_grad();
 
 	std::cout << facet.size() << std::endl;
 	std::cout << facet.descriptor() << std::endl;
@@ -111,6 +84,8 @@ int main(){
 	kernel3d.dimslice(0,1) += kernel2d;
 	kernel3d.dimslice(0,2) += kernel2d;
 
+	kernel3d.enable_grad();
+
 	auto facetc = tensor::conv2d(facet, kernel3d);
 
 	std::cout << facetc.size() << std::endl;
@@ -119,7 +94,13 @@ int main(){
 	const std::string faceconvd = "./src/faceconvd.jpeg";
 
 	tensor::to_image<float>(facetc, faceconvd);
-	*/
+
+	facetc.backward();
+
+	std::cout << facet.grad() << std::endl;
+
+	std::cout << kernel3d.grad() << std::endl;
+
 
 	return 0;
 }
