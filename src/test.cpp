@@ -63,84 +63,38 @@ int main(){
 
 	std::cout << cs.dimslice(1,2) - 1 << std::endl;
 
+	const std::string face = "./test/photos/trll.jpeg";
 
+	auto facet = tensor::from_image<float>(face);
 
-	/*
-	std::cout << "t2ok" << std::endl;
-	for(auto it = t2tok.begin(); it != t2tok.end(); ++it){
-		std::cout << *it << std::endl;
-	}
+	std::cout << facet.size() << std::endl;
+	std::cout << facet.descriptor() << std::endl;
 
-	std::cout << "t2t" << std::endl;
-	for(auto it = t2tt.begin(); it != t2tt.end(); ++it){
-		std::cout << *it << std::endl;
-	}
+	Tensor<float> kernel2d = tensor::from_list<float,2>({
+			/*
+			{1/16, 2/16, 1/16},
+			{2/16, 4/16, 2/16},
+			{1/16, 2/16, 1/16},
+			*/
 
-	*/
+			{-1.0, -1.0, -1.0},
+			{-1.0, 8.0, -1.0},
+			{-1.0, -1.0, -1.0},
+		}, false);
 
+	Tensor<float> kernel3d(3,3,3);
+	kernel3d.dimslice(0,0) += kernel2d;
+	kernel3d.dimslice(0,1) += kernel2d;
+	kernel3d.dimslice(0,2) += kernel2d;
 
-	/*
-	Tensor<double> longt = tensor::from_list<double,1>(
-		{1, 2, 3, 4, 5, 6, 7, 8}, true);
+	auto facetc = tensor::conv2d(facet, kernel3d);
 
-	auto longtr = longt.reshape(4, 2);
+	std::cout << facetc.size() << std::endl;
+	std::cout << facetc.descriptor() << std::endl;
 
-	auto dscd = t3.dimslices(1, 1, 2);
+	const std::string faceconvd = "./src/faceconvd.jpeg";
 
-	//auto mulres = longtr * dscd;
-
-	//dscd.transpose_();
-
-	auto dscdt = dscd.transpose(0,1);
-
-	std::cout << dscd << std::endl;
-	std::cout << dscdt << std::endl;
-
-	auto mmres = tensor::matmul(dscdt, longtr);
-
-	//mulres.backward();
-	mmres.backward();
-
-	std::cout << mmres.grad() << std::endl;
-	std::cout << dscdt.grad() << std::endl;
-	std::cout << dscd.grad() << std::endl;
-	std::cout << longtr.grad() << std::endl;
-	std::cout << longt.grad() << std::endl;
-	std::cout << t3.grad() << std::endl;
-
-	Tensor<double> rnd = tensor::random_normal(0.0, 1.0, 3, 5);
-	std::cout << rnd << std::endl;
-
-	Tensor<double> rndcd = tensor::random_normal(0.0, 1.0, rnd);
-	std::cout << rndcd << std::endl;
-
-	Tensor<float> rndber = tensor::random_bernoulli<float>(0.5, 10, 10);
-	std::cout << rndber << std::endl;
-
-	Tensor<int> eye = tensor::eye<int>(5);
-	std::cout << eye << std::endl;
-
-	Tensor<double> rnduni = tensor::random_uniform<double>(-1,
-							1, 2, 2);
-	std::cout << rnduni << std::endl;
-
-	std::cout << rnduni.softmax() << std::endl;
-	std::cout << "sum: " << rnduni.softmax().sum() << std::endl;
-
-	Tensor<std::size_t> rndmn = tensor::random_multinomial<std::size_t, double>(
-			rnduni.softmax(), 20);
-
-	std::cout << rndmn << std::endl;
-
-
-
-
-
-	
-	//std::cout << mmres << std::endl;
-	*/
-
-
+	tensor::to_image<float>(facetc, faceconvd);
 
 	return 0;
 }

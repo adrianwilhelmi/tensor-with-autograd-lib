@@ -277,6 +277,79 @@ namespace tensor{
 		return {d, elems};
 	}
 
+	template<typename T>
+	void to_image(const Tensor<T>& tensor, const std::string& filepath){
+		if(tensor.order() != 3 || tensor.extent(0) != 3){
+			throw std::runtime_error("this tensor doesnt represent an image");
+		}
+
+		std::size_t height = tensor.extent(1);
+		std::size_t width = tensor.extent(2);
+
+		cv::Mat image(height, width, CV_32FC3);
+		//auto type = std::is_same<T,float>::value ? CV_32FC3 : CV_8UC3;
+
+		//auto mul = std::is_same<T,float>::value ? 255.0f : 1;
+
+		for(std::size_t y = 0; y < height; ++y){
+			for(std::size_t x = 0; x < width; ++x){
+				cv::Vec3f color = {
+					tensor(2,y,x),
+					tensor(1,y,x),
+					tensor(0,y,x)
+				};
+				image.at<cv::Vec3f>(y,x) = color;
+			}
+		}
+
+		if(std::is_same<T, float>::value){
+			image.convertTo(image, CV_8UC3, 255.0f);
+		}
+		else if(std::is_same<T,int>::value){
+			image.convertTo(image, CV_8UC3);
+		}
+
+		cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
+		cv::imwrite(filepath, image);
+	}
+
+	template<typename T>
+	void to_video(const Tensor<T>& tensor, const std::string& filepath){
+		if(tensor.order() != 4 || tensor.extent(0) != 3){
+			throw std::runtime_error("this tensor doesnt represent a video");
+		}
+
+		auto num_frames = tensor.extent(0);
+		auto height = tensor.extent(2);
+		auto width = tensor.extent(3);
+
+		cv::VideoWriter writer(filepath, cv::VideoWriter::fourcc('M','J','P','G'), 30, cv::Size(width, height), true);
+
+		for(auto i = 0; i < num_frames; ++i){
+			cv::Mat frame(height, width, CV_32FC3);
+			for(auto y = 0; y < height; ++y){
+				for(auto x = 0; x < width; ++x){
+					cv::Vec3f color = {
+						tensor(2, i, y, x),
+						tensor(1, i, y, x),
+						tensor(0, i, y, x)
+					};
+					frame.at<cv::Vec3f>(y,x) = color;
+				}
+			}
+
+			if(std::is_same<T, float>::value){
+				frame.convertTo(frame, CV_8UC3, 255.0);
+			}
+			else if(std::is_same<T,int>::value){
+				frame.convertTo(frame, CV_8UC3);
+			}
+			cv::cvtColor(frame, frame, cv::COLOR_RGB2BGR);
+			writer.write(frame);
+		}
+	}
+
+
 	template<typename T, typename U = bool>
 	Tensor<U> one_hot(const Tensor<T>& t, std::size_t num_classes = 0){
 		if(num_classes == 0){
@@ -378,79 +451,6 @@ namespace tensor{
 		return res;
 	}
 
-	template<typename T>
-	void to_image(const Tensor<T>& tensor, const std::string& filepath){
-		if(tensor.order() != 3 || tensor.extent(0) != 3){
-			throw std::runtime_error("this tensor doesnt represent an image");
-		}
-
-		std::size_t height = tensor.extent(1);
-		std::size_t width = tensor.extent(2);
-
-		cv::Mat image(height, width, CV_32FC3);
-		//auto type = std::is_same<T,float>::value ? CV_32FC3 : CV_8UC3;
-
-		//auto mul = std::is_same<T,float>::value ? 255.0f : 1;
-
-		for(std::size_t y = 0; y < height; ++y){
-			for(std::size_t x = 0; x < width; ++x){
-				cv::Vec3f color = {
-					tensor(2,y,x),
-					tensor(1,y,x),
-					tensor(0,y,x)
-				};
-				image.at<cv::Vec3f>(y,x) = color;
-			}
-		}
-
-		if(std::is_same<T, float>::value){
-			image.convertTo(image, CV_8UC3, 255.0f);
-		}
-		else if(std::is_same<T,int>::value){
-			image.convertTo(image, CV_8UC3);
-		}
-
-		cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
-		cv::imwrite(filepath, image);
-	}
-
-	template<typename T>
-	void to_video(const Tensor<T>& tensor, const std::string& filepath){
-		if(tensor.order() != 4 || tensor.extent(0) != 3){
-			throw std::runtime_error("this tensor doesnt represent a video");
-		}
-
-		auto num_frames = tensor.extent(0);
-		auto height = tensor.extent(2);
-		auto width = tensor.extent(3);
-
-		cv::VideoWriter writer(filepath, cv::VideoWriter::fourcc('M','J','P','G'), 30, cv::Size(width, height), true);
-
-		for(auto i = 0; i < num_frames; ++i){
-			cv::Mat frame(height, width, CV_32FC3);
-			for(auto y = 0; y < height; ++y){
-				for(auto x = 0; x < width; ++x){
-					cv::Vec3f color = {
-						tensor(2, i, y, x),
-						tensor(1, i, y, x),
-						tensor(0, i, y, x)
-					};
-					frame.at<cv::Vec3f>(y,x) = color;
-				}
-			}
-
-			if(std::is_same<T, float>::value){
-				frame.convertTo(frame, CV_8UC3, 255.0);
-			}
-			else if(std::is_same<T,int>::value){
-				frame.convertTo(frame, CV_8UC3);
-			}
-			cv::cvtColor(frame, frame, cv::COLOR_RGB2BGR);
-			writer.write(frame);
-		}
-	}
-
-
 
 
 
@@ -519,6 +519,39 @@ namespace tensor{
 				res(i, j) = sum;
 			}
 		}
+		return res;
+	}
+
+	template<typename T>
+	Tensor<T> conv2d(const Tensor<T>& input, 
+			const Tensor<T>& kernel,
+			const std::size_t stride = 1,
+		       	const std::size_t padding = 1){
+		const std::size_t out_height = (input.extent(1) - kernel.extent(1) + 2 * padding) / stride + 1;
+		const std::size_t out_width = (input.extent(2) - kernel.extent(2) + 2 * padding) / stride + 1;
+
+		Tensor<T> res(input.extent(0), out_height, out_width);
+
+		auto num_channels = input.extent(0);
+
+		for(std::size_t c = 0; c < num_channels; ++c){
+			for(std::size_t i = 0; i < out_height; ++i){
+				for(std::size_t j = 0; j < out_width; ++j){
+					T sum = 0;
+					for(std::size_t ki = 0; ki < kernel.extent(1); ++ki){
+						for(std::size_t kj = 0; kj < kernel.extent(2); ++kj){
+							long long ii = i * stride + ki - padding;
+							long long jj = j * stride + kj - padding;
+							if(ii >= 0 && ii < (long long)input.extent(1) && jj >= 0 && jj < (long long)input.extent(2)){
+								sum += input(c, ii, jj) * kernel(c, ki, kj);
+							}
+						}
+					}
+					res(c, i, j) = sum;
+				}
+			}
+		}
+
 		return res;
 	}
 

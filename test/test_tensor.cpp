@@ -174,7 +174,7 @@ TEST(TensorTest, TensorImageConversionFloat){
 	const std::string four_path2 = "./test/photos/four2.png";
 	tensor::to_image<float>(four, four_path2);
 
-	const std::string troll_path2 = "./test/photos/troll2.png";
+	const std::string troll_path2 = "./test/photos/troll2.jpeg";
 	tensor::to_image<float>(troll, troll_path2);
 
 	Tensor<float> four2 = tensor::from_image<float>(four_path2);
