@@ -63,6 +63,36 @@ int main(){
 
 	std::cout << cs.dimslice(1,2) - 1 << std::endl;
 
+
+
+
+	std::cout << t2 << std::endl;
+	
+	auto t2r = t2.rot90();
+	std::cout << t2r << std::endl;
+
+	auto t2r2 = t2.rot180();
+	std::cout << t2r2 << std::endl;
+
+	t2r2.rot180_();
+
+	std::cout << t2r2 << std::endl;
+
+	std::cout << t2 << std::endl;
+
+
+	/*
+	t2r.rot90_();
+
+	std::cout << t2r << std::endl;
+	*/
+
+
+
+
+
+
+	/*
 	const std::string face = "./test/photos/trll.jpeg";
 
 	auto facet = tensor::from_image<float>(face);
@@ -71,12 +101,6 @@ int main(){
 	std::cout << facet.descriptor() << std::endl;
 
 	Tensor<float> kernel2d = tensor::from_list<float,2>({
-			/*
-			{1/16, 2/16, 1/16},
-			{2/16, 4/16, 2/16},
-			{1/16, 2/16, 1/16},
-			*/
-
 			{-1.0, -1.0, -1.0},
 			{-1.0, 8.0, -1.0},
 			{-1.0, -1.0, -1.0},
@@ -95,6 +119,7 @@ int main(){
 	const std::string faceconvd = "./src/faceconvd.jpeg";
 
 	tensor::to_image<float>(facetc, faceconvd);
+	*/
 
 	return 0;
 }

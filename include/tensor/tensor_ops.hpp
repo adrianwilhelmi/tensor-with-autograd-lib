@@ -523,6 +523,50 @@ namespace tensor{
 	}
 
 	template<typename T>
+	Tensor<T> conv2d(Tensor<T>& input, 
+			Tensor<T>& kernel,
+			const std::size_t stride = 1,
+		       	const std::size_t padding = 1){
+		const std::size_t out_height = (input.extent(1) - kernel.extent(1) + 2 * padding) / stride + 1;
+		const std::size_t out_width = (input.extent(2) - kernel.extent(2) + 2 * padding) / stride + 1;
+
+		Tensor<T> res(input.extent(0), out_height, out_width);
+
+		auto num_channels = input.extent(0);
+
+		for(std::size_t c = 0; c < num_channels; ++c){
+			for(std::size_t i = 0; i < out_height; ++i){
+				for(std::size_t j = 0; j < out_width; ++j){
+					T sum = 0;
+					for(std::size_t ki = 0; ki < kernel.extent(1); ++ki){
+						for(std::size_t kj = 0; kj < kernel.extent(2); ++kj){
+							long long ii = i * stride + ki - padding;
+							long long jj = j * stride + kj - padding;
+							if(ii >= 0 && ii < (long long)input.extent(1) && jj >= 0 && jj < (long long)input.extent(2)){
+								sum += input(c, ii, jj) * kernel(c, ki, kj);
+							}
+						}
+					}
+					res(c, i, j) = sum;
+				}
+			}
+		}
+
+		if(input.requires_grad() || kernel.requires_grad()){
+			res.enable_grad();
+
+			auto n = std::make_shared<Node<T>>(res);
+			func_variant<T> fn = FunctionConv2d<T>{};
+			n->grad_fn = fn;
+			n->set_inputs(input, kernel);
+
+			res.set_node(n);
+		}
+
+		return res;
+	}
+
+	template<typename T>
 	Tensor<T> conv2d(const Tensor<T>& input, 
 			const Tensor<T>& kernel,
 			const std::size_t stride = 1,
@@ -554,6 +598,7 @@ namespace tensor{
 
 		return res;
 	}
+
 
 }; //namespace tensor
 

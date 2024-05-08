@@ -249,13 +249,7 @@ public:
 	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
 			auto temp = inputs[1]->data;
-
 			temp.transpose_();
-
-			/*
-			inputs[0]->grads += tensor::matmul(grad, 
-					inputs[1]->data.transpose());
-			*/
 
 			inputs[0]->grads += tensor::matmul(grad, temp);
 			inputs[0]->backward();
@@ -264,17 +258,31 @@ public:
 			auto temp = inputs[0]->data;
 			temp.transpose_();
 
-			/*
-			inputs[1]->grads += tensor::matmul(
-					inputs[0]->data.transpose(),
-					grad);
-			*/
-
 			inputs[1]->grads += tensor::matmul(temp, grad);
 			inputs[1]->backward();
 		}
 	}
 };
+
+template<typename T>
+class FunctionConv2d : public Function<FunctionConv2d<T>, T>{
+public:
+	using Function<FunctionConv2d<T>, T>::Function;
+
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			inputs[0]->grads += tensor::conv2d(grad, 
+						inputs[1]->data.rot180());
+			inputs[0]->backward();
+		}
+		if(inputs[1]->data.requires_grad()){
+			inputs[1]->grads += tensor::conv2d(inputs[0]->data, 
+						grad);
+			inputs[1]->backward();
+		}
+	}
+};
+
 
 namespace function{
 	template<typename T>

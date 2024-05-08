@@ -176,6 +176,12 @@ public:
 	Tensor<T> col(const std::size_t i) {return dimslice(1, i);}
 	Tensor<const T> col(const std::size_t i) const {return dimslice(1, i);}
 
+	Tensor<T> rot180();
+	Tensor<const T> rot180() const;
+
+	Tensor<T> rot90();
+	Tensor<const T> rot90() const;
+
 	//tensor ops
 	//tensor scalar ops
 	
@@ -329,6 +335,26 @@ public:
 		return transpose(0,1);
 	}
 
+	void rot90_(){
+		if(order() != 2) throw std::invalid_argument("rot90: must be 2d tensor");
+
+		this->transpose_();
+
+		for(std::size_t i = 0; i < this->extent(1); ++i){
+			std::reverse(this->dimslice(1,i).begin(),
+					this->dimslice(1,i).end());
+		}
+	}
+
+
+	void rot180_(){
+		if(order() != 2) throw std::invalid_argument("rot1o0: must be 2d tensor");
+
+		for(std::size_t i = 0; i < this->extent(1); ++i){
+			std::reverse(this->dimslice(1,i).begin(),
+					this->dimslice(1,i).end());
+		}
+	}
 
 	//misc
 	T sum() const {return std::accumulate(this->begin(), this->end(), T{0});}
@@ -1144,6 +1170,67 @@ Tensor<T>::reshape(Args... args) const {
 		Tensor<T> res(d, this->elems_);
 		return res;
 	}
+}
+
+template<typename T>
+Tensor<T> Tensor<T>::rot180(){
+	if(order() != 2) throw std::invalid_argument("rot180: must be 2d tensor");
+
+	Tensor<T> res = *this;
+
+	for(std::size_t i = 0; i < this->extent(1); ++i){
+		std::reverse(res.dimslice(1,i).begin(),
+				res.dimslice(1,i).end());
+	}
+
+	return res;
+}
+
+template<typename T>
+Tensor<const T> Tensor<T>::rot180() const{
+	if(order() != 2) throw std::invalid_argument("rot180: must be 2d tensor");
+
+	Tensor<T> res = *this;
+
+	for(std::size_t i = 0; i < this->extent(1); ++i){
+		std::reverse(res.dimslice(1,i).begin(),
+				res.dimslice(1,i).end());
+	}
+
+	return res;
+}
+
+
+template<typename T>
+Tensor<T> Tensor<T>::rot90(){
+	if(order() != 2) throw std::invalid_argument("rot90: must be 2d tensor");
+
+	Tensor<T> res = *this;
+
+	res.transpose_();
+
+	for(std::size_t i = 0; i < res.extent(0); ++i){
+		std::reverse(res.dimslice(0,i).begin(),
+				res.dimslice(0,i).end());
+	}
+
+	return res;
+}
+
+template<typename T>
+Tensor<const T> Tensor<T>::rot90() const{
+	if(order() != 2) throw std::invalid_argument("rot90: must be 2d tensor");
+
+	Tensor<T> res = *this;
+
+	res.transpose_();
+
+	for(std::size_t i = 0; i < this->extent(0); ++i){
+		std::reverse(res.dimslice(0,i).begin(),
+				res.dimslice(0,i).end());
+	}
+
+	return res;
 }
 
 
