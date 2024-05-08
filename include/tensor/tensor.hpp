@@ -346,6 +346,19 @@ public:
 			return sorted[mid];
 		}
 	}
+	T var() const {
+		T mean = this->mean();
+		T var_sum = 0;
+		std::size_t n = 0;
+		for(auto it = this->begin(); it != this->end(); ++it, ++n){
+			T diff = *it - mean;
+			var_sum += diff * diff;
+		}
+		return n > 0 ? var_sum / n : 0;
+	}
+	T std() const{
+		return std::sqrt(this->var());
+	}
 
 	bool empty() const {return begin() == end();}
 
@@ -387,6 +400,37 @@ public:
 			n->grad_fn = fn;
 			res.set_node(n);
 		}
+		return res;
+	}
+
+	template<typename U = bool>
+	Tensor<U> one_hot(std::size_t num_classes = 0) const{
+		if(num_classes == 0){
+			num_classes = this->max() + 1;
+		}
+
+		Tensor<T> res(this->size(), num_classes);
+
+		auto it = this->begin();
+		for(std::size_t i = 0; i < this->size(); ++i){
+			res(i, static_cast<std::size_t>(*it) % (num_classes)) = 1;
+			++it;
+		}
+		
+		return res;
+	}
+
+	Tensor<T> cumsum(){
+		Tensor<T> res(*this);
+		
+		auto rit = res.begin();
+		T prev = *rit;
+		++rit;
+		for(; rit != res.end(); ++rit){
+			*rit = *rit + prev;
+			prev = *rit;
+		}
+
 		return res;
 	}
 

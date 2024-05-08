@@ -42,14 +42,27 @@ int main(){
 	Tensor<int> ta1 = tensor::arange<int>(0, 10, 1);
 	Tensor<int> ta2 = tensor::arange<int>(10, 20, 4);
 
-	Tensor<bool> oh1 = tensor::one_hot(ta1);
+	Tensor<int> oh1 = tensor::one_hot(ta1, 3);
 	Tensor<bool> oh2 = tensor::one_hot(ta2);
+
+	Tensor<bool> oh22 = ta2.one_hot();
+
 
 	std::cout << ta1 << std::endl;
 	std::cout << oh1 << std::endl;
 
 	std::cout << ta2 << std::endl;
 	std::cout << oh2 << std::endl;
+
+	std::cout << "(oh22 == oh2)" << std::endl;
+	std::cout << (oh22 == oh2) << std::endl;
+
+	Tensor<int> cs = oh1.cumsum();
+	
+	std::cout << cs << std::endl;
+
+	std::cout << cs.dimslice(1,2) - 1 << std::endl;
+
 
 
 	/*

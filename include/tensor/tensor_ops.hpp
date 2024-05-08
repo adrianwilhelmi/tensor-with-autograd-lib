@@ -280,14 +280,14 @@ namespace tensor{
 	template<typename T, typename U = bool>
 	Tensor<U> one_hot(const Tensor<T>& t, std::size_t num_classes = 0){
 		if(num_classes == 0){
-			num_classes = t.max();
+			num_classes = t.max() + 1;
 		}
 
-		Tensor<T> res(t.size(), num_classes + 1);
+		Tensor<T> res(t.size(), num_classes);
 
 		auto it = t.begin();
 		for(std::size_t i = 0; i < t.size(); ++i){
-			res(i, static_cast<std::size_t>(*it) % (num_classes + 1)) = 1;
+			res(i, static_cast<std::size_t>(*it) % (num_classes)) = 1;
 			++it;
 		}
 		
