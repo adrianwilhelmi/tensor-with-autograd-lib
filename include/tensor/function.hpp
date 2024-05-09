@@ -275,6 +275,7 @@ public:
 			for(std::size_t i = 0; i < temp.extent(0); ++i){
 				temp.dimslice(0,i).rot180_();
 			}
+
 			inputs[0]->grads += tensor::conv2d(grad, temp);
 			inputs[0]->backward();
 		}

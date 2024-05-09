@@ -63,7 +63,16 @@ int main(){
 
 	std::cout << cs.dimslice(1,2) - 1 << std::endl;
 
+	auto catted = tensor::concat(t2, t3, 0);
 
+	auto t33d = catted.reshape(1, 8, 3);
+	auto pooled = tensor::max_pooling(t33d, 2, 2);
+
+	std::cout << t33d << std::endl;
+
+	std::cout << pooled << std::endl;
+
+	/*
 	const std::string face = "./test/photos/trll.jpeg";
 
 	auto facet = tensor::from_image<float>(face);
@@ -95,13 +104,16 @@ int main(){
 
 	tensor::to_image<float>(facetc, faceconvd);
 
-	facetc.backward();
 
-	std::cout << facet.grad() << std::endl;
+	std::cout << kernel3d << std::endl;
+	facetc.backward();
 
 	std::cout << kernel3d.grad() << std::endl;
 
 
+	std::cout << kernel3d << std::endl;
+
+	*/
 	return 0;
 }
 

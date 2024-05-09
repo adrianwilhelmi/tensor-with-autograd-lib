@@ -598,6 +598,37 @@ namespace tensor{
 
 		return res;
 	}
+	
+	template<typename T>
+	Tensor<T> max_pooling(Tensor<T>& input, std::size_t kernel_size,
+			std::size_t stride){
+		if(input.order() != 3) throw std::invalid_argument("max_pooling: must be a 3d tensor");
+
+		const std::size_t num_channels = input.extent(0);
+		const std::size_t input_height = input.extent(1);
+		const std::size_t input_width = input.extent(2);
+
+		const std::size_t out_height = (input_height - kernel_size) / stride + 1;
+		const std::size_t out_width = (input_width - kernel_size) / stride + 1;
+
+		Tensor<T> res(num_channels, out_height, out_width);
+
+		for(std::size_t c = 0; c < num_channels; ++c){
+			for(std::size_t i = 0; i < out_height; ++i){
+				for(std::size_t j = 0; j < out_width; ++j){
+					auto submat = input.dimslice(0, c).
+							dimslices_arange(0, i * stride, 
+								i * stride + kernel_size - 1).
+							dimslices_arange(1, j * stride,
+								j * stride + kernel_size - 1);
+
+					res(c,i,j) = submat.max();
+				}
+			}
+		}
+
+		return res;
+	}
 
 
 }; //namespace tensor
