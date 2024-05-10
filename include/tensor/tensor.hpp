@@ -361,6 +361,7 @@ public:
 	T mean() const {return this->sum() / this->size();}
 	T max() const {return*std::max_element(this->begin(), this->end());}
 	T min() const {return*std::min_element(this->begin(), this->end());}
+
 	T median() const{
 		Storage<T> sorted(this->elems_);
 		std::sort(sorted.begin(), sorted.end());
@@ -372,6 +373,7 @@ public:
 			return sorted[mid];
 		}
 	}
+
 	T var() const {
 		T mean = this->mean();
 		T var_sum = 0;
@@ -382,8 +384,17 @@ public:
 		}
 		return n > 0 ? var_sum / n : 0;
 	}
+
 	T std() const{
 		return std::sqrt(this->var());
+	}
+
+	T lp_norm(const float p) const{
+		T sum = 0;
+		for(auto it = this->begin(); it != this->end(); ++it){
+			sum += std::pow(std::abs(*it), p);
+		}
+		return std::pow(sum, 1 / p);
 	}
 
 	bool empty() const {return begin() == end();}

@@ -65,12 +65,36 @@ int main(){
 
 	auto catted = tensor::concat(t2, t3, 0);
 
+	catted.enable_grad();
+
+	Tensor<double> ker = tensor::from_list<double,2>({
+			{0, 0, 0},
+			{0, 1, 0},
+			{0, 0, 0}
+			}, true);
+
+	ker = ker.reshape(1, 3, 3);
+	
 	auto t33d = catted.reshape(1, 8, 3);
-	auto pooled = tensor::max_pooling(t33d, 2, 2);
+	auto pooled = tensor::max_pooling(t33d, 2, 1);
+	auto convd = tensor::conv2d(t33d, ker, 1, 0);
 
 	std::cout << t33d << std::endl;
 
 	std::cout << pooled << std::endl;
+	std::cout << convd << std::endl;
+
+	auto vec = convd[0].dimslices_arange(0, 0, 2);
+
+	std::cout << vec << std::endl;
+	std::cout << vec.lp_norm(2) << std::endl;
+
+	pooled.backward();
+
+	std::cout << pooled.grad() << std::endl;
+	std::cout << t33d.grad() << std::endl;
+	std::cout << catted.grad() << std::endl;
+
 
 	/*
 	const std::string face = "./test/photos/trll.jpeg";

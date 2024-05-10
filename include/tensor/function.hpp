@@ -287,6 +287,59 @@ public:
 	}
 };
 
+template<typename T>
+class FunctionMaxPooling : public Function<FunctionMaxPooling<T>, T>{
+public:
+	using Function<FunctionMaxPooling<T>, T>::Function;
+
+	//FunctionMaxPooling(std::kernel_size, std::size_t stride)
+
+
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+
+			const std::size_t num_channels = inputs[0]->data.extent(0);
+			const std::size_t input_height = inputs[0]->data.extent(1);
+			const std::size_t input_width = inputs[0]->data.extent(2);
+
+			const std::size_t output_height = grad.extent(1);
+			const std::size_t output_width = grad.extent(2);
+
+			const std::size_t kernel_size = (input_width * (output_height - 1) - input_height * (output_width - 1)) / (output_height - output_width);
+
+			const std::size_t stride = (input_height - kernel_size) / (output_height - 1);
+
+			for(std::size_t c = 0; c < num_channels; ++c){
+				for(std::size_t i = 0; i < output_height; ++i){
+					for(std::size_t j = 0; j < output_width; ++j){
+						T max_val = std::numeric_limits<T>::lowest();
+						long long max_i = 0, max_j = 0;
+						for(std::size_t ki = 0; ki < kernel_size; ++ki){
+							for(std::size_t kj = 0; kj < kernel_size; ++kj){
+								long long ii = i * stride + ki;
+								long long jj = j * stride + kj;
+
+								if(ii < (long long)input_height && jj <(long long)input_width){
+									if(inputs[0]->data(c, ii, jj) > max_val){
+										max_val = inputs[0]->data(c, ii, jj);
+										max_i = ii;
+										max_j = jj;
+									}
+								}
+							}
+						}
+						inputs[0]->grads(c, max_i, max_j) += grad(c, i ,j);
+					}
+				}
+				
+			}
+
+			//inputs[0]->grads += 
+			inputs[0]->backward();
+		}
+	}
+};
+
 
 namespace function{
 	template<typename T>

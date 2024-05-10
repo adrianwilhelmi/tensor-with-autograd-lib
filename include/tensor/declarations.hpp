@@ -49,6 +49,8 @@ template<typename T>
 class FunctionMatmul;
 template<typename T>
 class FunctionConv2d;
+template<typename T>
+class FunctionMaxPooling;
 
 template<typename T>
 using func_variant = std::variant<
@@ -67,7 +69,8 @@ using func_variant = std::variant<
 	FunctionTanh<T>,
 	FunctionSigmoid<T>,
 	FunctionMatmul<T>,
-	FunctionConv2d<T>
+	FunctionConv2d<T>,
+	FunctionMaxPooling<T>
 >;
 
 template<typename T>
