@@ -47,6 +47,8 @@ public:
 		: desc_({size}), elems_(size), node(nullptr), req_grad_(false){
 		this->desc_.size = size;
 	}
+	Tensor(const T val) 
+		: desc_({1}), elems_({val}), node(nullptr), req_grad_(false) {}
 
 	Tensor&operator=(Tensor&&) = default;
 	Tensor&operator=(Tensor&x){

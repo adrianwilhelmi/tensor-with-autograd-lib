@@ -18,9 +18,27 @@ int main(){
 		{31, 12, 3},
 	}, true);
 
-	//std::cout << t3 << std::endl;
-	//std::cout << t2 << std::endl;
 	
+	auto t2s = t2 / t2.sum();
+	t2s.enable_grad();
+
+	std::cout << t3 << std::endl;
+	std::cout << t2 << std::endl;
+
+	std::cout << t2s << std::endl;
+
+	auto ct = tensor::cross_entropy(t2s, t3);
+
+	std::cout << ct << std::endl;
+
+	ct.backward();
+
+	std::cout << ct.grad() << std::endl;
+	std::cout << t2s.grad() << std::endl;
+	std::cout << t2.grad() << std::endl;
+
+	
+	/*
 	Tensor<double> t2tok = tensor::from_list<double,2>({
 		{1, 1, 1, 31},
 		{5, 4, 10, 12},
@@ -96,7 +114,11 @@ int main(){
 	std::cout << catted.grad() << std::endl;
 
 
-	/*
+
+
+
+
+
 	const std::string face = "./test/photos/trll.jpeg";
 
 	auto facet = tensor::from_image<float>(face);
@@ -136,8 +158,8 @@ int main(){
 
 
 	std::cout << kernel3d << std::endl;
-
 	*/
+
 	return 0;
 }
 

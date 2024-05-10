@@ -340,6 +340,20 @@ public:
 	}
 };
 
+template<typename T>
+class FunctionCrossEntropy : public Function<FunctionCrossEntropy<T>, T>{
+public:
+	using Function<FunctionCrossEntropy<T>, T>::Function;
+
+	void backward_impl(Tensor<T>& /*grad*/, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			inputs[0]->grads += (inputs[0]->data - inputs[1]->data) 
+						/ (T)(inputs[0]->data.extent(0));
+			inputs[0]->backward();
+		}
+	}
+};
+
 
 namespace function{
 	template<typename T>

@@ -51,6 +51,8 @@ template<typename T>
 class FunctionConv2d;
 template<typename T>
 class FunctionMaxPooling;
+template<typename T>
+class FunctionCrossEntropy;
 
 template<typename T>
 using func_variant = std::variant<
@@ -70,7 +72,8 @@ using func_variant = std::variant<
 	FunctionSigmoid<T>,
 	FunctionMatmul<T>,
 	FunctionConv2d<T>,
-	FunctionMaxPooling<T>
+	FunctionMaxPooling<T>,
+	FunctionCrossEntropy<T>
 >;
 
 template<typename T>

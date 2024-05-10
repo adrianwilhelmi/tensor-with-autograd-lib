@@ -748,6 +748,44 @@ namespace tensor{
 		return res;
 	}
 
+	template<typename T>
+	Tensor<T> cross_entropy(Tensor<T>& logits, Tensor<T>& targets){
+		if(logits.order() != 2 || targets.order() != 2)
+			throw std::invalid_argument("cross_entropy: must be a 2d tensor");
+ 		if(logits.extent(0) != targets.extent(0) || logits.extent(1) != targets.extent(1)) 
+			throw std::invalid_argument("cross_entropy: inconsistent extents");
+		if(logits.sum() < (T)0.99 || logits.sum() > (T)1.01)
+			throw std::invalid_argument("corss_entropy: logits should sum to 1");
+
+		//Tensor<T> log_logits = logits.log();
+		//Tensor<T> loss = 
+
+		Tensor<T> res = -((targets * logits.log()).sum() / logits.extent(0));
+
+		if(logits.requires_grad()){
+			res.enable_grad();
+			auto n = std::make_shared<Node<T>>(res);
+			func_variant<T> fn = FunctionCrossEntropy<T>{};
+			n->grad_fn = fn;
+			n->set_inputs(logits, targets);
+			res.set_node(n);
+		}
+
+		return res;
+	}
+
+	template<typename T>
+	Tensor<T> cross_entropy(const Tensor<T>& logits, const Tensor<T>& targets){
+		if(logits.order() != 2 || targets.order() != 2)
+			throw std::invalid_argument("cross_entropy: must be a 2d tensor");
+ 		if(logits.extent(0) != targets.extent(0) || logits.extent(1) != targets.extent(1)) 
+			throw std::invalid_argument("cross_entropy: inconsistent extents");
+
+		Tensor<T> res = -((targets * logits.log()).sum() / logits.extent(0));
+
+		return res;
+	}
+
 
 }; //namespace tensor
 
