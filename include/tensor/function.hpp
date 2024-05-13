@@ -280,14 +280,16 @@ public:
 			auto temp = inputs[1]->data;
 			temp.transpose_();
 
-			inputs[0]->grads += tensor::matmul(grad, temp);
+			//inputs[0]->grads += tensor::matmul(grad, temp);
+			inputs[0]->grads += grad.matmul_optimized(temp);
 			inputs[0]->backward();
 		}
 		if(inputs[1]->data.requires_grad()){
 			auto temp = inputs[0]->data;
 			temp.transpose_();
 
-			inputs[1]->grads += tensor::matmul(temp, grad);
+			//inputs[1]->grads += tensor::matmul(temp, grad);
+			inputs[1]->grads += temp.matmul_optimized(grad);
 			inputs[1]->backward();
 		}
 	}

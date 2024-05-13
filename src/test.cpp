@@ -19,49 +19,56 @@ int main(){
 	}, true);
 
 
-	Tensor<float> tr1 = tensor::random_normal(0.0, 1.0, 17, 32);
-	Tensor<float> tr2 = tensor::random_normal(0.0, 1.0, 32, 13);
+	Tensor<float> tr1 = tensor::random_normal(0.0, 1.0, 512, 512);
+	Tensor<float> tr2 = tensor::random_normal(0.0, 1.0, 512, 512);
 
-	std::cout << "STORAGEs" << std::endl;
-	std::cout << "A" << std::endl;
-	std::cout << tr1.storage() << std::endl;
-	std::cout << "B" << std::endl;
-	std::cout << tr2.storage() << std::endl;
-	std::cout << std::endl;
+	auto start = std::chrono::high_resolution_clock::now();
 
-	std::cout << "og tensors" << std::endl;
-	std::cout << "A" << std::endl;
-	std::cout << tr1 << std::endl;
-	std::cout << "B" << std::endl;
-	std::cout << tr2 << std::endl;
-	std::cout << std::endl;
+	//std::cout << tr1.matmul_optimized(tr2) << std::endl;
+	auto optim_result = tr1.matmul_optimized(tr2);
 
-	std::cout << "matmuls" << std::endl;
-	std::cout << tr1.matmul_optimized(tr2) << std::endl;
-	std::cout << tensor::matmul(tr1, tr2) << std::endl;
+	auto stop = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 
+	std::cout << "optim: " << duration.count() << std::endl;
+
+	start = std::chrono::high_resolution_clock::now();
+
+	auto classic_result = tensor::matmul_classic(tr1, tr2);
+
+	stop = std::chrono::high_resolution_clock::now();
+	duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
+	std::cout << "clasic: " << duration.count() << std::endl;
+
+
+
+
+	start = std::chrono::high_resolution_clock::now();
+
+	auto matmul_result = tensor::matmul(tr1, tr2);
+
+	stop = std::chrono::high_resolution_clock::now();
+	duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
+	std::cout << "matmul: " << duration.count() << std::endl;
+
+
+
+
+
+	std::cout << "equality" << std::endl;
 
 
 	/*
-	Tensor<float> t81 = tensor::arange(0, 64, 1).reshape(8,8);
-	Tensor<float> t82 = tensor::arange(64, 128, 1).reshape(8,8);
-
-	auto mmo = t81.matmul_optimized(t82);
-	auto mmc = tensor::matmul(t81,t82);
-
-	std::cout << mmo << std::endl;
-	std::cout << mmc << std::endl;
+	std::cout << optim_result << std::endl;
+	std::cout << classic_result << std::endl;
 	*/
-
-	
-
-	/*
-	auto t2t = t2.transpose();
-	auto mmo = t3.matmul_optimized(t2t);
-	auto mmc = tensor::matmul(t3,t2t);
-	*/
-
-
+     
+	bool eq = tensor::nearly_equal(optim_result, classic_result);
+	bool eq2 = tensor::nearly_equal(optim_result, matmul_result);
+	std::cout << eq << std::endl;
+	std::cout << eq2 << std::endl;
 
 	return 0;
 }

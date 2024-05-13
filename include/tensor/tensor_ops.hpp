@@ -466,8 +466,42 @@ namespace tensor{
 		return std::inner_product(t1.begin(), t1.end(), t2.begin(), T(0));
 	}
 
+
 	template<typename T>
 	Tensor<T> matmul(Tensor<T>& t1, Tensor<T>& t2){
+		if(t1.order() != 2 || t2.order() != 2)
+			throw std::runtime_error("must be a 2d matrix");
+		if(t1.extent(1) != t2.extent(0))
+			throw std::runtime_error("cant multiply these matrices");
+
+		Tensor<T> res = t1.matmul_optimized(t2);
+
+		if(t1.requires_grad() || t2.requires_grad()){
+			res.enable_grad();
+
+			auto n = std::make_shared<Node<T>>(res);
+			func_variant<T> fn = FunctionMatmul<T>{};
+			n->grad_fn = fn;
+			n->set_inputs(t1, t2);
+
+			res.set_node(n);
+		}
+
+		return res;
+	}
+
+	template<typename T>
+	Tensor<T> matmul(const Tensor<T>& t1, const Tensor<T>& t2){
+		if(t1.order() != 2 || t2.order() != 2)
+			throw std::runtime_error("must be a 2d matrix");
+		if(t1.extent(1) != t2.extent(0))
+			throw std::runtime_error("cant multiply these matrices");
+
+		return t1.matmul_optimized(t2);
+	}
+
+	template<typename T>
+	Tensor<T> matmul_classic(Tensor<T>& t1, Tensor<T>& t2){
 		assert(t1.order() == 2);
 		assert(t2.order() == 2);
 		assert(t1.extent(1) == t2.extent(0));
@@ -503,7 +537,7 @@ namespace tensor{
 	}
 
 	template<typename T>
-	Tensor<T> matmul(const Tensor<T>& t1, const Tensor<T>& t2){
+	Tensor<T> matmul_classic(const Tensor<T>& t1, const Tensor<T>& t2){
 		assert(t1.order() == 2);
 		assert(t2.order() == 2);
 		assert(t1.extent(1) == t2.extent(0));
@@ -521,6 +555,7 @@ namespace tensor{
 		}
 		return res;
 	}
+
 
 	template<typename T>
 	Tensor<T> conv2d(Tensor<T>& input, 

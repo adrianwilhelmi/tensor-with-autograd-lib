@@ -310,23 +310,6 @@ public:
 
 	//MATMUL
 
-	static void mm_transposed_b(const Tensor<T>& a,
-			const Tensor<T>& bt, Tensor<T>& res,
-			std::size_t start_row, std::size_t end_row, 
-			std::size_t start_col, std::size_t end_col,
-			std::size_t shared_dim){
-		
-		for(std::size_t i = start_row; i < end_row; ++i){
-			for(std::size_t j = start_col; j < end_col; ++j){
-				T sum = 0;
-				for(std::size_t k = 0; k < shared_dim; ++k){
-					sum += a(i,k) * bt(j,k);
-				}
-				res(i,j) = sum;
-			}
-		}
-	}
-
 	static void mm_block_simd_transposed_b(const Tensor<T>& a, 
 			const Tensor<T>& bt, Tensor<T>& res, 
 			std::size_t start_row, std::size_t end_row, 
@@ -370,7 +353,7 @@ public:
 					"this->row.size != other.col.size");
 
 
-		//initializing bt has to be done that way due to memory layout)
+		//initializing bt has to be done that way due to memory layout
 		Tensor<T> bt(other.extent(1), other.extent(0));
 		other.transpose_();
 
@@ -382,7 +365,6 @@ public:
 
 		other.transpose_();
 
-		//Tensor<T> bt = other.transpose();
 
 		std::size_t n = this->extent(0);
 		std::size_t p = other.extent(1);
@@ -391,14 +373,6 @@ public:
 		Tensor<T> res(n,p);
 
 		const std::size_t num_threads = std::thread::hardware_concurrency();
-
-		if(num_threads == 0)
-			throw std::runtime_error("no threads available");
-
-
-
-		std::cout << "num_threads" << std::endl;
-		std::cout << num_threads << std::endl;
 
 		std::size_t rows_per_thread = n / num_threads;
 		std::size_t extra_rows = n % num_threads;
@@ -412,8 +386,6 @@ public:
 		}
 
 		std::vector<std::thread> threads;
-		
-		//threads.reserve(num_threads);
 
 		std::size_t start_row = 0;
 		for(std::size_t i = 0; i < num_threads; ++i){
@@ -432,7 +404,6 @@ public:
 			t.join();
 		}
 
-		//other.transpose_();
 		return res;
 	}
 

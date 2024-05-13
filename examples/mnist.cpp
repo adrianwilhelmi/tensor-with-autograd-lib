@@ -105,11 +105,20 @@ int main(){
 
 	//learning
 	
+	auto start = std::chrono::high_resolution_clock::now();
+	auto stop = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
 	for(std::size_t epoch = 0; epoch < num_epochs; ++epoch){
 		std::cout << "epoch: " << epoch <<  std::endl; 
 
+
+		start = std::chrono::high_resolution_clock::now();
+		
+
 		if(epoch == 30)
 			learning_rate /= 10.0;
+
 
 		for(std::size_t i = 0; i < num_imgs; ++i){
 			Tensor<float> X_flat = train_img[i].reshape(1,28*28);
@@ -124,7 +133,7 @@ int main(){
 			auto loss = tensor::cross_entropy<float>(output, 
 								labels[i]);
 			loss.backward();
-			std::cout << "loss: " << loss;
+			//std::cout << "loss: " << loss;
 
 			W2 -= learning_rate * W2.grad();
 			B2 -= learning_rate * B2.grad();
@@ -136,6 +145,11 @@ int main(){
 			W1.zero_grad();
 			B1.zero_grad();
 		}
+
+		stop = std::chrono::high_resolution_clock::now();
+
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+		std::cout << "duration: " << duration.count() << std::endl;
 	}
 
 
