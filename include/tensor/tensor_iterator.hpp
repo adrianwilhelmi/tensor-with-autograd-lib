@@ -17,7 +17,6 @@ class TensorIterator{
 			const TensorIterator<U>&iter);
 
 public:
-	//using iterator_category = std::forward_iterator_tag;
 	using iterator_category = std::random_access_iterator_tag;
 	using value_type = typename std::remove_const<T>::type;
 	using pointer = T*;
@@ -66,6 +65,14 @@ public:
 
 	std::size_t size() const{
 		return this->desc.size;
+	}
+
+	std::vector<std::size_t> get_index(){
+		return this->index;
+	}
+
+	const std::vector<std::size_t> get_index() const{
+		return this->index;
 	}
 
 private:

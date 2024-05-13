@@ -1,8 +1,8 @@
 CXX=g++
 #CXX=clang++
-CXXFLAGS=-Wall -Wextra -Werror -pedantic -ggdb -ggdb3 -O3 -g -std=c++17 -Iinclude -I/usr/include/opencv4
+CXXFLAGS=-Wall -Wextra -Werror -pedantic -ggdb -ggdb3 -O3 -g -std=c++17 -Iinclude -I/usr/include/opencv4 -I/usr/include/ -mavx
 LDLIBS=-lm -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs
-LDFLAGS= -L/usr/lib/x86_64-linux-gnu
+LDFLAGS= -L/usr/lib/x86_64-linux-gnu -L/usr/lib
 TEST_LDLIBS=$(LDLIBS) -lgtest -lgtest_main -pthread
 SFLAGS=-fsanitize=address,undefined
 
@@ -14,7 +14,20 @@ TEST_SRC=$(wildcard test/*.cpp)
 TEST_OBJ=$(TEST_SRC:%.cpp=%.o)
 TEST_EXEC=run_test
 
+EX_SRC=$(wildcard examples/*.cpp)
+EX_OBJ=$(EX_SRC:%.cpp=%.o)
+
 all: $(EXEC)
+
+example: $(EX_OBJ)
+	@$(CXX) $(CXXFLAGS) $(EX_OBJ) -o example $(LDFLAGS) $(LDLIBS)
+	@./example
+	@rm -f $(EX_OBJ) example
+
+aexample: $(EX_OBJ)
+	@$(CXX) $(CXXFLAGS) $(EX_OBJ) -o example $(LDFLAGS) $(LDLIBS)
+	@valgrind --leak-check=full ./example
+	@rm -f $(EX_OBJ) example
 
 $(EXEC): $(OBJ)
 	@$(CXX) $(CXXFLAGS) $(OBJ) -o $(EXEC) $(LDFLAGS) $(LDLIBS)
@@ -40,6 +53,6 @@ analysis: $(OBJ)
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	@rm -f $(EXEC) $(TEST_EXEC) $(OBJ) $(TEST_OBJ) a.out
+	@rm -f $(EXEC) $(TEST_EXEC) $(OBJ) $(TEST_OBJ) example $(EX_OBJ) a.out
 
 .PHONY: all clean test

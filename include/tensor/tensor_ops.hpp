@@ -111,14 +111,14 @@ namespace tensor{
 	template<typename T, typename... Exts>
 	Tensor<T> zeros(Exts... exts){
 		Tensor<T> res(exts...);
-		std::fill(res.elems.begin(), res.elems.end(), T{0});
+		std::fill(res.begin(), res.end(), T{0});
 		return res;
 	}
 
 	template<typename T, typename... Exts>
 	Tensor<T> ones(const Exts... exts){
 		Tensor<T> res(exts...);
-		std::fill(res.elems.begin(), res.elems.end(), T{1});
+		std::fill(res.begin(), res.end(), T{1});
 		return res;
 	}
 
@@ -754,13 +754,12 @@ namespace tensor{
 			throw std::invalid_argument("cross_entropy: must be a 2d tensor");
  		if(logits.extent(0) != targets.extent(0) || logits.extent(1) != targets.extent(1)) 
 			throw std::invalid_argument("cross_entropy: inconsistent extents");
-		if(logits.sum() < (T)0.99 || logits.sum() > (T)1.01)
-			throw std::invalid_argument("corss_entropy: logits should sum to 1");
 
-		//Tensor<T> log_logits = logits.log();
-		//Tensor<T> loss = 
-
-		Tensor<T> res = -((targets * logits.log()).sum() / logits.extent(0));
+		constexpr T epsilon = 1e-8;
+		auto softmaxed = logits.softmax();
+		auto clipped = softmaxed.clip(epsilon, (T)1 - epsilon);
+		
+		Tensor<T> res = -((targets * clipped.log()).sum() / logits.extent(0));
 
 		if(logits.requires_grad()){
 			res.enable_grad();
@@ -781,7 +780,11 @@ namespace tensor{
  		if(logits.extent(0) != targets.extent(0) || logits.extent(1) != targets.extent(1)) 
 			throw std::invalid_argument("cross_entropy: inconsistent extents");
 
-		Tensor<T> res = -((targets * logits.log()).sum() / logits.extent(0));
+		constexpr T epsilon = 1e-8;
+		auto softmaxed = logits.softmax();
+		auto clipped = softmaxed.clip(epsilon, (T)1 - epsilon);
+		
+		Tensor<T> res = -((targets * clipped.log()).sum() / logits.extent(0));
 
 		return res;
 	}

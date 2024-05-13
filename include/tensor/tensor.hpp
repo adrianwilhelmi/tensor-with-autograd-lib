@@ -10,9 +10,12 @@
 #include"function.hpp"
 #include"node.hpp"
 
+
 #include<cassert>
 #include<iostream>
 #include<sstream>
+#include<thread>
+#include<immintrin.h>
 
 template<typename T>
 class Tensor{
@@ -43,9 +46,12 @@ public:
 
 		this->node = nullptr;
 	}
-	Tensor(const std::size_t size) 
+	Tensor(const std::size_t size, const T& fill_val = T(0)) 
 		: desc_({size}), elems_(size), node(nullptr), req_grad_(false){
 		this->desc_.size = size;
+		for(auto it = this->begin(); it != this->end; ++it){
+			*it = fill_val;
+		}
 	}
 	Tensor(const T val) 
 		: desc_({1}), elems_({val}), node(nullptr), req_grad_(false) {}
@@ -63,6 +69,11 @@ public:
 				this->node->set_inputs(x);
 			}
 		}
+		return*this;
+	}
+
+	Tensor<T>& operator=(const T& val){
+		std::fill(this->begin(), this->end(), val);
 		return*this;
 	}
 
@@ -122,17 +133,6 @@ public:
 	Tensor<T> operator()(const TensorSlice& d) {return {d, this->elems_};}
 	Tensor<const T> operator()(const TensorSlice& d) const {return {d, this->elems_};}
 
-	/*
-	Tensor<T> operator()(const TensorSlice& d) {
-		TensorSlice desc(d.extents);
-		return {desc, this->elems_};
-	}
-	Tensor<const T> operator()(const TensorSlice& d) const {
-		TensorSlice desc(d.extents);
-		return {desc, this->elems_};
-	}
-	*/
-
 	T& item() {return elems_[desc_.start];}
 	const T& item() const {return elems_[desc_.start];}
 
@@ -169,6 +169,46 @@ public:
 		Tensor<const T>>
 	reshape(Args... args) const;
 
+	template<typename U = std::size_t>
+	Tensor<U> argmax(){
+		TensorSlice d({this->order()});
+		Tensor<U> res(d);
+
+		auto mit = this->begin();
+		std::vector<std::size_t> max_index(res.size());
+		for(auto it = mit; it != this->end(); ++it){
+			if(*it > *mit){
+				mit = it;
+				auto temp = mit.get_index();
+				temp[0] -= this->extent(0); // dont ask
+				std::copy(temp.begin(), temp.end(),
+						res.begin());
+			}
+		}
+		
+		return res;
+	}
+
+	template<typename U = std::size_t>
+	Tensor<const U> argmax() const{
+		TensorSlice d({this->order()});
+		Tensor<U> res(d);
+
+		auto mit = this->begin();
+		std::vector<std::size_t> max_index(res.size());
+		for(auto it = mit; it != this->end(); ++it){
+			if(*it > *mit){
+				mit = it;
+				auto temp = mit.get_index();
+				temp[0] -= this->extent(0); // dont ask
+				std::copy(temp.begin(), temp.end(),
+						res.begin());
+			}
+		}
+		
+		return res;
+	}
+
 	Tensor<T> operator[](std::size_t i) {return dimslice(0, i);}
 	Tensor<const T> operator[](std::size_t i) const {return dimslice(0, i);}
 
@@ -193,7 +233,7 @@ public:
 	template<typename M, typename F>
 	Enable_if<Tensor_type<M>(), Tensor&> apply(const M&m, F f);
 
-	Tensor& operator=(const T& value);
+	//Tensor& operator=(const T& value);
 
 	Tensor& operator+=(const T& value);
 	Tensor& operator-=(const T& value);
@@ -264,6 +304,140 @@ public:
 		}
 		return res;
 	}
+
+
+
+
+	//MATMUL
+
+	static void mm_transposed_b(const Tensor<T>& a,
+			const Tensor<T>& bt, Tensor<T>& res,
+			std::size_t start_row, std::size_t end_row, 
+			std::size_t start_col, std::size_t end_col,
+			std::size_t shared_dim){
+		
+		for(std::size_t i = start_row; i < end_row; ++i){
+			for(std::size_t j = start_col; j < end_col; ++j){
+				T sum = 0;
+				for(std::size_t k = 0; k < shared_dim; ++k){
+					sum += a(i,k) * bt(j,k);
+				}
+				res(i,j) = sum;
+			}
+		}
+	}
+
+	static void mm_block_simd_transposed_b(const Tensor<T>& a, 
+			const Tensor<T>& bt, Tensor<T>& res, 
+			std::size_t start_row, std::size_t end_row, 
+			std::size_t start_col, std::size_t end_col,
+			long shared_dim){
+		
+		for(std::size_t i = start_row; i < end_row; ++i){
+			for(std::size_t j = start_col; j < end_col; ++j){
+				__m256 sum = _mm256_setzero_ps();
+				T partial_sum = 0;
+
+				long k = 0;
+				for(k = 0; k < shared_dim - 8; k += 8){
+					__m256 vec_a = _mm256_loadu_ps(&a(i,k));
+					__m256 vec_b = _mm256_loadu_ps(&bt(j,k));
+					sum = _mm256_add_ps(sum, _mm256_mul_ps(
+								vec_a, vec_b));
+				}
+
+				for(; k < shared_dim; ++k){
+					partial_sum += a(i,k) * bt(j,k);
+				}
+
+				T buffer[8];
+				_mm256_storeu_ps(buffer, sum);
+
+				for(std::size_t l = 0; l < 8; ++l){
+					res(i,j) += buffer[l];
+				}
+				res(i,j) += partial_sum;
+			}
+		}
+	}
+
+	Tensor<T> matmul_optimized(Tensor<T>& other) const{
+		if(this->order() != 2 || other.order() != 2)
+			throw std::runtime_error("must be 2d matrices");
+
+		if(this->extent(1) != other.extent(0))
+			throw std::runtime_error(
+					"this->row.size != other.col.size");
+
+
+		//initializing bt has to be done that way due to memory layout)
+		Tensor<T> bt(other.extent(1), other.extent(0));
+		other.transpose_();
+
+		auto it = other.begin();
+		for(auto bit = bt.begin(); bit != bt.end(); ++bit){
+			*bit = *it;
+			++it;
+		}
+
+		other.transpose_();
+
+		//Tensor<T> bt = other.transpose();
+
+		std::size_t n = this->extent(0);
+		std::size_t p = other.extent(1);
+		std::size_t m = this->extent(1);
+
+		Tensor<T> res(n,p);
+
+		const std::size_t num_threads = std::thread::hardware_concurrency();
+
+		if(num_threads == 0)
+			throw std::runtime_error("no threads available");
+
+
+
+		std::cout << "num_threads" << std::endl;
+		std::cout << num_threads << std::endl;
+
+		std::size_t rows_per_thread = n / num_threads;
+		std::size_t extra_rows = n % num_threads;
+
+		if(rows_per_thread <= 1){
+			mm_block_simd_transposed_b(std::cref(*this),
+					std::cref(bt), 
+					std::ref(res), 
+					0, n, 0, p, m);
+			return res;
+		}
+
+		std::vector<std::thread> threads;
+		
+		//threads.reserve(num_threads);
+
+		std::size_t start_row = 0;
+		for(std::size_t i = 0; i < num_threads; ++i){
+			std::size_t end_row = start_row + rows_per_thread + 
+				(i < extra_rows ? 1 : 0);
+
+			threads.emplace_back(mm_block_simd_transposed_b, 
+					std::cref(*this),
+					std::cref(bt),
+					std::ref(res),
+					start_row, end_row, 0, p, m);
+			start_row = end_row;
+		}
+
+		for(auto& t : threads){
+			t.join();
+		}
+
+		//other.transpose_();
+		return res;
+	}
+
+
+
 
 	Tensor<T>& transpose_(const std::size_t d1, const std::size_t d2){
 		assert(d1 < this->order() && d2 < this->order());
@@ -360,6 +534,40 @@ public:
 
 	//misc
 	T sum() const {return std::accumulate(this->begin(), this->end(), T{0});}
+	Tensor<T> sum(const long dim){
+		if(dim == -1) return sum();
+
+		Tensor<T> res(this->extent(dim));
+		for(std::size_t i = 0; i < res.size(); ++i){
+			res[i] += this->dimslice(dim, i).sum();
+		}
+
+		if(this->requires_grad()){
+			res.enable_grad();
+
+			auto n = std::make_shared<Node<T>>(res);
+			func_variant<T> fn = FunctionSum<T>{};
+			n->grad_fn = fn;
+			n->set_inputs(*this);
+
+			res.set_node(n);
+		}
+
+
+		return res;
+	}
+
+	Tensor<T> sum(const long dim) const{
+		if(dim == -1) return sum();
+
+		Tensor<T> res(this->extent(dim));
+		for(std::size_t i = 0; i < (std::size_t)dim; ++i){
+			res[i] = this->dimslice(dim, i).sum();
+		}
+
+		return res;
+	}
+
 	T mean() const {return this->sum() / this->size();}
 	T max() const {return*std::max_element(this->begin(), this->end());}
 	T min() const {return*std::min_element(this->begin(), this->end());}
@@ -473,7 +681,21 @@ public:
 		return res;
 	}
 
-	//funcs
+	Tensor<T>& clip(const T low, const T high){
+		if(low > high)
+			throw std::runtime_error("low > high");
+
+		for(auto it = this->begin(); it != this->end(); ++it){
+			if(*it < low){
+				*it = low;
+			}
+			else if(*it > high){
+				*it = high;
+			}
+		}
+		return*this;
+	}
+
 	Tensor<T> pow(Tensor<T>& exps){
 		assert(same_extents(this->desc_, exps.descriptor()) 
 				|| exps.order() == 0);
@@ -514,6 +736,13 @@ public:
 
 			res.set_node(n);
 		}
+		
+		return res;
+	}
+
+	Tensor<T> log() const{
+		Tensor<T> res(*this);
+		res.apply([&](T& a) {a = std::log(a);});
 		
 		return res;
 	}
@@ -592,6 +821,18 @@ public:
 		res.apply([&](T& a) {a = std::exp(a - max);});
 		T sum = res.sum();
 		res.apply([&](T&a) {a /= sum;});
+
+		/*
+		if(this->req_grad_){
+			res.enable_grad();
+			func_variant<T> fn = FunctionSoftmax<T>{};
+			auto n = std::make_shared<Node<T>>(res);
+			n->grad_fn = fn;
+			n->set_inputs(*this);
+
+			res.set_node(n);
+		}
+		*/
 
 		return res;
 	}
@@ -681,6 +922,13 @@ public:
 			throw std::runtime_error("grad(): grad is off");
 		}
 		return this->node->grads(d);
+	}
+
+	void zero_grad(){
+		if(!req_grad_ || !this->node)
+			throw std::runtime_error("zero_grad: grad is off");
+
+		this->node->grads.fill((T)(0));
 	}
 
 	void backward_(){
@@ -1284,9 +1532,9 @@ Tensor<T>& Tensor<T>::operator%=(const T& val){
 //tensor tensor ops
 template<typename T>
 template<typename M, typename F>
-Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::apply(const M&m, F f){
-	assert(same_extents(this->desc_, m.descriptor()));
-	auto j = m.begin();
+Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::apply(const M&other, F f){
+	assert(same_extents(this->desc_, other.descriptor()));
+	auto j = other.begin();
 	for(auto i = begin(); i != end(); ++i){
 		f(*i, *j);
 		++j;

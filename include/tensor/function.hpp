@@ -10,6 +10,7 @@
 #include<vector>
 #include<functional>
 #include<iostream>
+#include<stdexcept>
 
 template<typename Derived, typename T>
 class Function{
@@ -39,7 +40,6 @@ public:
 			if(node_ptr->data.requires_grad()){
 				node_ptr->grads(grad.descriptor()) += grad;
 				node_ptr->backward();
-
 			}
 		}
 	}
@@ -189,7 +189,9 @@ public:
 
 	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
-			inputs[0]->grads += inputs[1]->data * grad;
+			auto temp = inputs[0]->data;
+			temp.exp_();
+			inputs[0]->grads += temp * grad;
 			inputs[0]->backward();
 		}
 	}
@@ -203,8 +205,21 @@ public:
 	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
 			//NOT FINISHED
-			//auto temp = inputs[0]->data > T(0);
-			inputs[0]->grads += inputs[1]->data * grad;
+			auto temp = inputs[0]->data;
+			temp.relu_();
+
+			auto tit = temp.begin();
+			auto git = grad.begin();
+			auto rit = inputs[0]->grads.begin();
+			for(auto tit = temp.begin(); 
+					tit != temp.end(); ++ tit){
+				if(*tit > 0){
+					*rit = *git;
+				}
+				++rit;
+				++git;
+			}
+
 			inputs[0]->backward();
 		}
 	}
@@ -240,6 +255,20 @@ public:
 		}
 	}
 };
+
+template<typename T>
+class FunctionSoftmax : public Function<FunctionSoftmax<T>, T>{
+public:
+	using Function<FunctionSoftmax<T>,T>::Function;
+
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			inputs[0]->grads += grad;
+			inputs[0]->backward();
+		}
+	}
+};
+
 
 template<typename T>
 class FunctionMatmul : public Function<FunctionMatmul<T>, T>{
@@ -347,13 +376,46 @@ public:
 
 	void backward_impl(Tensor<T>& /*grad*/, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
-			inputs[0]->grads += (inputs[0]->data - inputs[1]->data) 
-						/ (T)(inputs[0]->data.extent(0));
+			inputs[0]->grads += (inputs[0]->data.softmax() - inputs[1]->data);
 			inputs[0]->backward();
 		}
 	}
 };
 
+template<typename T>
+class FunctionSum : public Function<FunctionSum<T>, T>{
+public:
+	using Function<FunctionSum<T>, T>::Function;
+
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			std::size_t shape = inputs[0]->data.order();
+			long common = -1;
+			for(std::size_t i = 0; i < shape; ++i){
+				if(grad.size() == 
+						inputs[0]->data.extent(i)){
+					common = i;
+				}
+			}
+
+			if(common == -1){
+				throw std::runtime_error("no common extents");
+			}
+
+			for(std::size_t i = 0; i < grad.size(); ++i){
+
+				Tensor<T> temp(inputs[0]->grads.dimslice(common,i).descriptor());
+
+				//temp.fill(grad[i]);
+				temp = grad(i);
+
+				inputs[0]->grads.dimslice(common, i) += temp;
+			}
+			
+			inputs[0]->backward();
+		}
+	}
+};
 
 namespace function{
 	template<typename T>

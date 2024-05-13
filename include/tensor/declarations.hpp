@@ -46,6 +46,8 @@ class FunctionTanh;
 template<typename T>
 class FunctionSigmoid;
 template<typename T>
+class FunctionSoftmax;
+template<typename T>
 class FunctionMatmul;
 template<typename T>
 class FunctionConv2d;
@@ -53,6 +55,8 @@ template<typename T>
 class FunctionMaxPooling;
 template<typename T>
 class FunctionCrossEntropy;
+template<typename T>
+class FunctionSum;
 
 template<typename T>
 using func_variant = std::variant<
@@ -70,10 +74,12 @@ using func_variant = std::variant<
 	FunctionRelu<T>,
 	FunctionTanh<T>,
 	FunctionSigmoid<T>,
+	FunctionSoftmax<T>,
 	FunctionMatmul<T>,
 	FunctionConv2d<T>,
 	FunctionMaxPooling<T>,
-	FunctionCrossEntropy<T>
+	FunctionCrossEntropy<T>,
+	FunctionSum<T>
 >;
 
 template<typename T>

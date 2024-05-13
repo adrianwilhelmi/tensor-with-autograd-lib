@@ -23,6 +23,11 @@ struct Node{
 		this->grads = g;
 	}
 
+	void set_grad(const Tensor<T>& g){
+		//only used in softmax actually
+		this->grads = g;
+	}
+
 	Node(Tensor<T>& res) : grads(res.copy_dims()), grad_fn(FunctionEmpty<T>{}) {
 		res.share(this->data);
 		if(res.requires_grad()){
