@@ -840,10 +840,12 @@ namespace tensor{
 			throw std::invalid_argument("cross_entropy: inconsistent extents");
 
 		constexpr T epsilon = 1e-8;
-		auto softmaxed = logits.softmax();
-		auto clipped = softmaxed.clip(epsilon, (T)1 - epsilon);
+		Tensor<T> t = logits.softmax();
+		t.clip_(epsilon, (T)1 - epsilon);
+		t.log_();
+		t *= targets;
 		
-		Tensor<T> res = -((targets * clipped.log()).sum() / logits.extent(0));
+		Tensor<T> res = -(t.sum() / logits.extent(0));
 
 		return res;
 	}

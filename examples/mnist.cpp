@@ -70,7 +70,7 @@ int main(){
 	const std::string train_path = "./examples/dataset/mnist_train.csv";
 	const std::string test_path = "./examples/dataset/mnist_test.csv";
 
-	const std::size_t num_imgs = 500;
+	const std::size_t num_imgs = 30000;
 
 	auto [train_img, labels] = csv_to_tensors<float>(train_path, num_imgs);
 	auto [test_img, test_labels] = csv_to_tensors<float>(test_path, 
@@ -96,7 +96,7 @@ int main(){
 	W2.enable_grad();
 	B2.enable_grad();
 
-	const std::size_t num_epochs = 50;
+	const std::size_t num_epochs = 1;
 	float learning_rate = 0.1;
 	
 
@@ -132,7 +132,7 @@ int main(){
 			auto loss = tensor::cross_entropy<float>(output, 
 								labels[i]);
 			loss.backward();
-			//std::cout << "loss: " << loss;
+			std::cout << "loss: " << loss;
 
 			W2 -= learning_rate * W2.grad();
 			B2 -= learning_rate * B2.grad();
