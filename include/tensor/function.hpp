@@ -278,7 +278,10 @@ public:
 	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
 			auto temp = inputs[1]->data;
-			temp.transpose_();
+			//temp.transpose_();
+
+			inputs[0]->grads += 
+				grad.matmul_optimized_transposed_b(temp);
 
 			//inputs[0]->grads += tensor::matmul(grad, temp);
 			inputs[0]->grads += grad.matmul_optimized(temp);

@@ -19,8 +19,8 @@ int main(){
 	}, true);
 
 
-	Tensor<float> tr1 = tensor::random_normal(0.0, 1.0, 512, 512);
-	Tensor<float> tr2 = tensor::random_normal(0.0, 1.0, 512, 512);
+	Tensor<int> tr1 = tensor::random_normal(0.0, 1.0, 64, 64);
+	Tensor<int> tr2 = tensor::random_normal(0.0, 1.0, 64, 64);
 
 	auto start = std::chrono::high_resolution_clock::now();
 

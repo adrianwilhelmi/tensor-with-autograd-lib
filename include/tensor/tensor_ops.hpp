@@ -497,7 +497,18 @@ namespace tensor{
 		if(t1.extent(1) != t2.extent(0))
 			throw std::runtime_error("cant multiply these matrices");
 
-		return t1.matmul_optimized(t2);
+		Tensor<T> bt(t2.extent(1), t2.extent(0));
+		bt.transpose_();
+
+		auto bit = bt.begin();
+		for(auto it = t2.begin(); it != t2.end(); ++it){
+			*bit = *it;
+			++bit;
+		}
+
+		bt.transpose_();
+
+		return t1.matmul_optimized_transposed_b(bt);
 	}
 
 	template<typename T>

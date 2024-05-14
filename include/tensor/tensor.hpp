@@ -315,59 +315,113 @@ public:
 			std::size_t start_row, std::size_t end_row, 
 			std::size_t start_col, std::size_t end_col,
 			long shared_dim){
-		
-		for(std::size_t i = start_row; i < end_row; ++i){
-			for(std::size_t j = start_col; j < end_col; ++j){
-				__m256 sum = _mm256_setzero_ps();
-				T partial_sum = 0;
 
-				long k = 0;
-				for(k = 0; k < shared_dim - 8; k += 8){
-					__m256 vec_a = _mm256_loadu_ps(&a(i,k));
-					__m256 vec_b = _mm256_loadu_ps(&bt(j,k));
-					sum = _mm256_add_ps(sum, _mm256_mul_ps(
-								vec_a, vec_b));
+
+		if constexpr(std::is_same_v<T,float>){
+			for(std::size_t i = start_row; i < end_row; ++i){
+				for(std::size_t j = start_col; j < end_col; ++j){
+					__m256 sum = _mm256_setzero_ps();
+					T partial_sum = 0;
+
+					long k = 0;
+					for(k = 0; k < shared_dim - 8; k += 8){
+						__m256 vec_a = _mm256_loadu_ps(&a(i,k));
+						__m256 vec_b = _mm256_loadu_ps(&bt(j,k));
+						sum = _mm256_add_ps(sum, _mm256_mul_ps(
+									vec_a, vec_b));
+					}
+
+					for(; k < shared_dim; ++k){
+						partial_sum += a(i,k) * bt(j,k);
+					}
+
+					T buffer[8];
+					_mm256_storeu_ps(buffer, sum);
+
+					for(std::size_t l = 0; l < 8; ++l){
+						res(i,j) += buffer[l];
+					}
+					res(i,j) += partial_sum;
 				}
-
-				for(; k < shared_dim; ++k){
-					partial_sum += a(i,k) * bt(j,k);
-				}
-
-				T buffer[8];
-				_mm256_storeu_ps(buffer, sum);
-
-				for(std::size_t l = 0; l < 8; ++l){
-					res(i,j) += buffer[l];
-				}
-				res(i,j) += partial_sum;
 			}
 		}
+		else if constexpr (std::is_same_v<T,int>){
+			for(std::size_t i = start_row; i < end_row; ++i){
+				for(std::size_t j = start_col; j < end_col; ++j){
+					__m256i sum = _mm256_setzero_si256();
+					T partial_sum = 0;
+
+					long k = 0;
+					for(k = 0; k < shared_dim - 8; k += 8){
+						//casting to assure data is alligned
+						__m256i vec_a = _mm256_loadu_si256(
+								(__m256i*)&a(i,k));
+
+						__m256i vec_b = _mm256_loadu_si256(
+								(__m256i*)&bt(j,k));
+
+						sum = _mm256_add_epi32(
+								sum, 
+								_mm256_mullo_epi32(
+									vec_a, vec_b));
+					}
+
+					for(; k < shared_dim; ++k){
+						partial_sum += a(i,k) * bt(j,k);
+					}
+
+					T buffer[8];
+					_mm256_storeu_si256((__m256i*)buffer, sum);
+
+					for(std::size_t l = 0; l < 8; ++l){
+						res(i,j) += buffer[l];
+					}
+					res(i,j) += partial_sum;
+				}
+			}
+		}
+		else{
+			throw std::runtime_error("this type is not supported yet, try float, int");
+			//static_assert(false, "this type is not supported yet");
+		}
+
 	}
 
-	Tensor<T> matmul_optimized(Tensor<T>& other) const{
+	Tensor<T> matmul_optimized(const Tensor<T>& other) const{
 		if(this->order() != 2 || other.order() != 2)
 			throw std::runtime_error("must be 2d matrices");
 
-		if(this->extent(1) != other.extent(0))
+		if(this->extent(1) != other.extent(1))
 			throw std::runtime_error(
-					"this->row.size != other.col.size");
-
+					"matrices not suitable for matmul");
 
 		//initializing bt has to be done that way due to memory layout
-		Tensor<T> bt(other.extent(1), other.extent(0));
-		other.transpose_();
 
-		auto it = other.begin();
-		for(auto bit = bt.begin(); bit != bt.end(); ++bit){
+		Tensor<T> bt(other.extent(1), other.extent(0));
+		bt.transpose_();
+
+		auto bit = bt.begin();
+		for(auto it = other.begin(); it != other.end(); ++it){
 			*bit = *it;
-			++it;
+			++bit;
 		}
 
-		other.transpose_();
+		bt.transpose_();
+
+		return matmul_optimized_transposed_b(bt);
+	}
+
+	Tensor<T> matmul_optimized_transposed_b(const Tensor<T>& bt) const{
+		if(this->order() != 2 || bt.order() != 2)
+			throw std::runtime_error("must be 2d matrices");
+
+		if(this->extent(1) != bt.extent(1))
+			throw std::runtime_error(
+					"matrices not suitable for matmul");
 
 
 		std::size_t n = this->extent(0);
-		std::size_t p = other.extent(1);
+		std::size_t p = bt.extent(0);
 		std::size_t m = this->extent(1);
 
 		Tensor<T> res(n,p);
