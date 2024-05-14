@@ -317,7 +317,41 @@ public:
 			long shared_dim){
 
 
-		if constexpr(std::is_same_v<T,float>){
+
+		if constexpr(std::is_same_v<T,double>){
+			for(std::size_t i = start_row; i < end_row; ++i){
+				for(std::size_t j = start_col; j < end_col; ++j){
+					__m256d sum = _mm256_setzero_pd();
+					T partial_sum = 0;
+
+					long k = 0;
+					for(k = 0; k < shared_dim - 4; k += 4){
+						__m256d vec_a = _mm256_loadu_pd(&a(i,k));
+						__m256d vec_b = _mm256_loadu_pd(&bt(j,k));
+						/*
+						sum = _mm256_add_pd(sum, _mm256_mul_pd(
+									vec_a, vec_b));
+						*/
+
+						sum = _mm256_fmadd_pd(vec_a, vec_b, sum);
+					}
+
+					for(; k < shared_dim; ++k){
+						partial_sum += a(i,k) * bt(j,k);
+					}
+
+					T buffer[4];
+					_mm256_storeu_pd(buffer, sum);
+
+					for(std::size_t l = 0; l < 4; ++l){
+						res(i,j) += buffer[l];
+					}
+					res(i,j) += partial_sum;
+				}
+			}
+
+		}
+		else if constexpr(std::is_same_v<T,float>){
 			for(std::size_t i = start_row; i < end_row; ++i){
 				for(std::size_t j = start_col; j < end_col; ++j){
 					__m256 sum = _mm256_setzero_ps();
@@ -327,8 +361,12 @@ public:
 					for(k = 0; k < shared_dim - 8; k += 8){
 						__m256 vec_a = _mm256_loadu_ps(&a(i,k));
 						__m256 vec_b = _mm256_loadu_ps(&bt(j,k));
+						/*
 						sum = _mm256_add_ps(sum, _mm256_mul_ps(
 									vec_a, vec_b));
+						*/
+
+						sum = _mm256_fmadd_ps(vec_a, vec_b, sum);
 					}
 
 					for(; k < shared_dim; ++k){
@@ -344,6 +382,7 @@ public:
 					res(i,j) += partial_sum;
 				}
 			}
+
 		}
 		else if constexpr (std::is_same_v<T,int>){
 			for(std::size_t i = start_row; i < end_row; ++i){
@@ -379,6 +418,43 @@ public:
 					res(i,j) += partial_sum;
 				}
 			}
+
+		}
+		else if constexpr (std::is_same_v<T,short>){
+			for(std::size_t i = start_row; i < end_row; ++i){
+				for(std::size_t j = start_col; j < end_col; ++j){
+					__m256i sum = _mm256_setzero_si256();
+					T partial_sum = 0;
+
+					long k = 0;
+					for(k = 0; k < shared_dim - 8; k += 8){
+						//casting to assure data is alligned
+						__m256i vec_a = _mm256_loadu_si256(
+								(__m256i*)&a(i,k));
+
+						__m256i vec_b = _mm256_loadu_si256(
+								(__m256i*)&bt(j,k));
+
+						sum = _mm256_add_epi16(
+								sum, 
+								_mm256_mullo_epi16(
+									vec_a, vec_b));
+					}
+
+					for(; k < shared_dim; ++k){
+						partial_sum += a(i,k) * bt(j,k);
+					}
+
+					T buffer[16];
+					_mm256_storeu_si256((__m256i*)buffer, sum);
+
+					for(std::size_t l = 0; l < 16; ++l){
+						res(i,j) += buffer[l];
+					}
+					res(i,j) += partial_sum;
+				}
+			}
+
 		}
 		else{
 			throw std::runtime_error("this type is not supported yet, try float, int");
@@ -391,7 +467,7 @@ public:
 		if(this->order() != 2 || other.order() != 2)
 			throw std::runtime_error("must be 2d matrices");
 
-		if(this->extent(1) != other.extent(1))
+		if(this->extent(1) != other.extent(0))
 			throw std::runtime_error(
 					"matrices not suitable for matmul");
 
@@ -706,7 +782,7 @@ public:
 		return res;
 	}
 
-	Tensor<T>& clip(const T low, const T high){
+	Tensor<T>& clip_(const T low, const T high){
 		if(low > high)
 			throw std::runtime_error("low > high");
 
@@ -719,6 +795,22 @@ public:
 			}
 		}
 		return*this;
+	}
+
+	Tensor<T> clip(const T low, const T high){
+		if(low > high)
+			throw std::runtime_error("low > high");
+
+		Tensor<T> res(*this);
+		for(auto it = res.begin(); it != res.end(); ++it){
+			if(*it < low){
+				*it = low;
+			}
+			else if(*it > high){
+				*it = high;
+			}
+		}
+		return res;
 	}
 
 	Tensor<T> pow(Tensor<T>& exps){

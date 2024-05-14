@@ -244,7 +244,7 @@ namespace tensor{
 		std::vector<std::size_t> exts = {num_samples};
 		TensorSlice d(exts);
 
-		return Tensor<std::size_t>(d, counts);
+		return Tensor<T>(d, counts);
 	}
 
 	template<typename T>
@@ -474,7 +474,18 @@ namespace tensor{
 		if(t1.extent(1) != t2.extent(0))
 			throw std::runtime_error("cant multiply these matrices");
 
-		Tensor<T> res = t1.matmul_optimized(t2);
+		Tensor<T> bt(t2.extent(1), t2.extent(0));
+		bt.transpose_();
+
+		auto bit = bt.begin();
+		for(auto it = t2.begin(); it != t2.end(); ++it){
+			*bit = *it;
+			++bit;
+		}
+
+		bt.transpose_();
+
+		Tensor<T> res = t1.matmul_optimized_transposed_b(bt);
 
 		if(t1.requires_grad() || t2.requires_grad()){
 			res.enable_grad();
@@ -802,10 +813,12 @@ namespace tensor{
 			throw std::invalid_argument("cross_entropy: inconsistent extents");
 
 		constexpr T epsilon = 1e-8;
-		auto softmaxed = logits.softmax();
-		auto clipped = softmaxed.clip(epsilon, (T)1 - epsilon);
+		Tensor<T> t = logits.softmax();
+		t.clip_(epsilon, (T)1 - epsilon);
+		t.log_();
+		t *= targets;
 		
-		Tensor<T> res = -((targets * clipped.log()).sum() / logits.extent(0));
+		Tensor<T> res = -(t.sum() / logits.extent(0));
 
 		if(logits.requires_grad()){
 			res.enable_grad();

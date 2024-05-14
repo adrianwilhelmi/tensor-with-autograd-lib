@@ -61,8 +61,7 @@ Tensor<T> forward(
 	Tensor<T> hidden = hmmb.relu();
 
 	Tensor<T> omm = tensor::matmul(hidden, W2);
-	Tensor<T> res = omm + B2;
-	return res;
+	return omm + B2;
 }
 
 int main(){
@@ -148,7 +147,7 @@ int main(){
 
 		stop = std::chrono::high_resolution_clock::now();
 
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+		duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
 		std::cout << "duration: " << duration.count() << std::endl;
 	}
 

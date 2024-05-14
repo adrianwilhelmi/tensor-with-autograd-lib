@@ -19,8 +19,8 @@ int main(){
 	}, true);
 
 
-	Tensor<int> tr1 = tensor::random_normal(0.0, 1.0, 64, 64);
-	Tensor<int> tr2 = tensor::random_normal(0.0, 1.0, 64, 64);
+	Tensor<float> tr1 = tensor::random_normal(0.0, 1.0, 4, 15);
+	Tensor<float> tr2 = tensor::random_normal(0.0, 1.0, 15, 4);
 
 	auto start = std::chrono::high_resolution_clock::now();
 
@@ -64,12 +64,54 @@ int main(){
 	std::cout << optim_result << std::endl;
 	std::cout << classic_result << std::endl;
 	*/
+
      
 	bool eq = tensor::nearly_equal(optim_result, classic_result);
 	bool eq2 = tensor::nearly_equal(optim_result, matmul_result);
 	std::cout << eq << std::endl;
 	std::cout << eq2 << std::endl;
+	
 
+
+
+	/*
+
+	auto temp1 = matmul_result.transpose();
+	
+	auto temp2 = matmul_result;
+	temp2.transpose_();
+
+	std::cout << temp2.descriptor() << std::endl;
+	std::cout << (temp1 == temp2) << std::endl;
+
+	Tensor<float> ttd(matmul_result.extent(1), matmul_result.extent(0));
+	ttd.transpose_();
+	auto tit = ttd.begin();
+	for(auto it = matmul_result.begin(); it != matmul_result.end(); ++it){
+		*tit = *it;
+		++tit;
+	}
+	ttd.transpose_();
+
+	std::cout << temp1 << std::endl;
+	std::cout << ttd << std::endl;
+
+	std::cout << temp1.descriptor() << std::endl;
+	std::cout << ttd.descriptor() << std::endl;
+	
+
+	std::cout << temp1.storage() << std::endl;
+	std::cout << ttd.storage() << std::endl;
+
+	auto temp1mm = tensor::matmul(matmul_result, temp1);
+	auto ttdmm = tensor::matmul(matmul_result, ttd);
+
+	std::cout << temp1mm << std::endl;
+	std::cout << ttdmm << std::endl;
+
+	std::cout << (temp1mm == ttdmm) << std::endl;
+	
+	*/
 	return 0;
 }
 
