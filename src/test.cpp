@@ -18,13 +18,13 @@ int main(){
 		{31, 12, 3},
 	}, true);
 
-	Tensor<double> tr1 = tensor::random_normal(0.0, 1.0, 5, 6);
-	Tensor<double> tr2 = tensor::random_normal(0.0, 1.0, 5, 6);
+	Tensor<int> tr1 = tensor::random_normal(0.0, 1.0, 9, 10);
+	Tensor<int> tr2 = tensor::random_normal(0.0, 1.0, 9, 10);
 
 	std::cout << tr1 << std::endl;
 	std::cout << tr2 << std::endl;
 
-	tr1 -= tr2;
+	tr1 *= tr2;
 
 	std::cout << tr1 << std::endl;
 

@@ -1623,43 +1623,53 @@ Tensor<T>& Tensor<T>::apply(F f){
 template<typename T>
 Tensor<T>& Tensor<T>::operator+=(const T& val){
 	//return apply([&](T& a) {a += val;});
-	int i = 0;
-	if constexpr(std::is_same_v<T,float> && size() >= 8){
-		__m256 val_vec = _mm256_set1_ps(val);
 
-		for(; i <= size() - 8; i += 8){
-			__m256 data_vec = _mm256_loadu_ps(data() + i);
-			__m256 result_vec = _mm256_add_ps(data_vec, val_vec);
-			_mm256_storeu_ps(data() + i, result_vec);
+	std::size_t i = 0;
+	if constexpr(std::is_same_v<T,float>){
+		if(size() >= 8){
+			__m256 val_vec = _mm256_set1_ps(val);
+
+			for(; i <= size() - 8; i += 8){
+				__m256 data_vec = _mm256_loadu_ps(data() + i);
+				__m256 result_vec = _mm256_add_ps(data_vec, val_vec);
+				_mm256_storeu_ps(data() + i, result_vec);
+			}
 		}
 
 	}
-	else if constexpr(std::is_same_v<T,double> && size() >= 4){
-		__m256d val_vec = _mm256_set1_pd(val);
+	else if constexpr(std::is_same_v<T,double>){
+		if(size() >= 4){
+			__m256d val_vec = _mm256_set1_pd(val);
 
-		for(; i <= size() - 4; i += 4){
-			__m256d data_vec = _mm256_loadu_pd(data() + i);
-			__m256d result_vec = _mm256_add_pd(data_vec, val_vec);
-			_mm256_storeu_pd(data() + i, result_vec);
+			for(; i <= size() - 4; i += 4){
+				__m256d data_vec = _mm256_loadu_pd(data() + i);
+				__m256d result_vec = _mm256_add_pd(data_vec, val_vec);
+				_mm256_storeu_pd(data() + i, result_vec);
+			}
 		}
 		
 	}
-	else if constexpr(std::is_same_v<T,int> && size() >= 8){
-		__m256i val_vec = _mm256_set1_epi32(val);
+	else if constexpr(std::is_same_v<T,int>){
+		if(size() >= 8){
+			__m256i val_vec = _mm256_set1_epi32(val);
 
-		for(; i <= size() - 8; i += 8){
-			__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
-			__m256i result_vec = _mm256_add_epi32(data_vec, val_vec);
-			_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+			for(; i <= size() - 8; i += 8){
+				__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
+				__m256i result_vec = _mm256_add_epi32(data_vec, val_vec);
+				_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+			}
 		}
+
 	}
-	else if constexpr(std::is_same_v<T,short> && size() >= 16){
-		__m256i val_vec = _mm256_set1_epi16(val);
-		
-		for(; i <= size() - 16; i += 16){
-			__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
-			__m256i result_vec = _mm256_add_epi16(data_vec, val_vec);
-			_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+	else if constexpr(std::is_same_v<T,short>){
+		if(size() >= 16){
+			__m256i val_vec = _mm256_set1_epi16(val);
+			
+			for(; i <= size() - 16; i += 16){
+				__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
+				__m256i result_vec = _mm256_add_epi16(data_vec, val_vec);
+				_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+			}
 		}
 		
 	}
@@ -1667,65 +1677,166 @@ Tensor<T>& Tensor<T>::operator+=(const T& val){
 	for(; i < size(); ++i){
 		data()[i] += val;
 	}
+
+	return *this;
 }
 
 template<typename T>
 Tensor<T>& Tensor<T>::operator-=(const T& val){
 	//return apply([&](T& a) {a -= val;});
-	int i = 0;
-	if constexpr(std::is_same_v<T,float> && size() >= 8){
-		__m256 val_vec = _mm256_set1_ps(val);
 
-		for(; i <= size() - 8; i += 8){
-			__m256 data_vec = _mm256_loadu_ps(data() + i);
-			__m256 result_vec = _mm256_sub_ps(data_vec, val_vec);
-			_mm256_storeu_ps(data() + i, result_vec);
+	std::size_t i = 0;
+	if constexpr(std::is_same_v<T,float>){
+		if(size() >= 8){
+			__m256 val_vec = _mm256_set1_ps(val);
+
+			for(; i <= size() - 8; i += 8){
+				__m256 data_vec = _mm256_loadu_ps(data() + i);
+				__m256 result_vec = _mm256_sub_ps(data_vec, val_vec);
+				_mm256_storeu_ps(data() + i, result_vec);
+			}
 		}
 
 	}
-	else if constexpr(std::is_same_v<T,double> && size() >= 4){
-		__m256d val_vec = _mm256_set1_pd(val);
+	else if constexpr(std::is_same_v<T,double>){
+		if(size() >= 4){
+			__m256d val_vec = _mm256_set1_pd(val);
 
-		for(; i <= size() - 4; i += 4){
-			__m256d data_vec = _mm256_loadu_pd(data() + i);
-			__m256d result_vec = _mm256_sub_pd(data_vec, val_vec);
-			_mm256_storeu_pd(data() + i, result_vec);
+			for(; i <= size() - 4; i += 4){
+				__m256d data_vec = _mm256_loadu_pd(data() + i);
+				__m256d result_vec = _mm256_sub_pd(data_vec, val_vec);
+				_mm256_storeu_pd(data() + i, result_vec);
+			}
 		}
 		
 	}
-	else if constexpr(std::is_same_v<T,int> && size() >= 8){
-		__m256i val_vec = _mm256_set1_epi32(val);
+	else if constexpr(std::is_same_v<T,int>){
+		if(size() >= 8){
+			__m256i val_vec = _mm256_set1_epi32(val);
 
-		for(; i <= size() - 8; i += 8){
-			__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
-			__m256i result_vec = _mm256_sub_epi32(data_vec, val_vec);
-			_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+			for(; i <= size() - 8; i += 8){
+				__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
+				__m256i result_vec = _mm256_sub_epi32(data_vec, val_vec);
+				_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+			}
 		}
+
 	}
-	else if constexpr(std::is_same_v<T,short> && size() >= 16){
-		__m256i val_vec = _mm256_set1_epi16(val);
-		
-		for(; i <= size() - 16; i += 16){
-			__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
-			__m256i result_vec = _mm256_sub_epi16(data_vec, val_vec);
-			_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
-		}
+	else if constexpr(std::is_same_v<T,short>){
+	       if(size() >= 16){
+			__m256i val_vec = _mm256_set1_epi16(val);
+			
+			for(; i <= size() - 16; i += 16){
+				__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
+				__m256i result_vec = _mm256_sub_epi16(data_vec, val_vec);
+				_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+			}
+	       }
 		
 	}
 
 	for(; i < size(); ++i){
 		data()[i] -= val;
 	}
+
+	return *this;
 }
 
 template<typename T>
 Tensor<T>& Tensor<T>::operator*=(const T& val){
-	return apply([&](T& a) {a *= val;});
+	//return apply([&](T& a) {a *= val;});
+	
+	std::size_t i = 0;
+	if constexpr(std::is_same_v<T,float>){
+		if(size() >= 8){
+			__m256 val_vec = _mm256_set1_ps(val);
+
+			for(; i <= size() - 8; i += 8){
+				__m256 data_vec = _mm256_loadu_ps(data() + i);
+				__m256 result_vec = _mm256_mul_ps(data_vec, val_vec);
+				_mm256_storeu_ps(data() + i, result_vec);
+			}
+		}
+
+	}
+	else if constexpr(std::is_same_v<T,double>){
+		if(size() >= 4){
+			__m256d val_vec = _mm256_set1_pd(val);
+
+			for(; i <= size() - 4; i += 4){
+				__m256d data_vec = _mm256_loadu_pd(data() + i);
+				__m256d result_vec = _mm256_mul_pd(data_vec, val_vec);
+				_mm256_storeu_pd(data() + i, result_vec);
+			}
+		}
+		
+	}
+	else if constexpr(std::is_same_v<T,int>){
+		if(size() >= 8){
+			__m256i val_vec = _mm256_set1_epi32(val);
+
+			for(; i <= size() - 8; i += 8){
+				__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
+				__m256i result_vec = _mm256_mullo_epi32(data_vec, val_vec);
+				_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+			}
+		}
+	}
+	else if constexpr(std::is_same_v<T,short>){
+		if(size() >= 16){
+			__m256i val_vec = _mm256_set1_epi16(val);
+			
+			for(; i <= size() - 16; i += 16){
+				__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
+				__m256i result_vec = _mm256_mullo_epi16(data_vec, val_vec);
+				_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+			}
+		}
+
+	}
+
+	for(; i < size(); ++i){
+		data()[i] *= val;
+	}
+
+	return *this;
 }
 
 template<typename T>
 Tensor<T>& Tensor<T>::operator/=(const T& val){
-	return apply([&](T& a) {a /= val;});
+	//return apply([&](T& a) {a /= val;});
+
+	std::size_t i = 0;
+	if constexpr(std::is_same_v<T,float>){
+		if(size() >= 8){
+			__m256 val_vec = _mm256_set1_ps(val);
+
+			for(; i <= size() - 8; i += 8){
+				__m256 data_vec = _mm256_loadu_ps(data() + i);
+				__m256 result_vec = _mm256_div_ps(data_vec, val_vec);
+				_mm256_storeu_ps(data() + i, result_vec);
+			}
+		}
+
+	}
+	else if constexpr(std::is_same_v<T,double>){
+		if(size() >= 4){
+			__m256d val_vec = _mm256_set1_pd(val);
+
+			for(; i <= size() - 4; i += 4){
+				__m256d data_vec = _mm256_loadu_pd(data() + i);
+				__m256d result_vec = _mm256_div_pd(data_vec, val_vec);
+				_mm256_storeu_pd(data() + i, result_vec);
+			}
+		}
+		
+	}
+
+	for(; i < size(); ++i){
+		data()[i] /= val;
+	}
+
+	return *this;
 }
 
 template<typename T>
