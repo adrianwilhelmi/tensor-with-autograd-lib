@@ -1,5 +1,5 @@
-#CXX=g++
-CXX=clang++
+CXX=g++
+#CXX=clang++
 CXXFLAGS=-Wall -Wextra -Werror -Wno-c11-extensions -pedantic -ggdb -ggdb3 -O3 -g -std=c++17 -Iinclude -I/usr/include/opencv4 -I/usr/include/ -mfma -mavx -mavx2 -pthread
 LDLIBS=-lm -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs
 LDFLAGS= -L/usr/lib/x86_64-linux-gnu -L/usr/lib -pthread

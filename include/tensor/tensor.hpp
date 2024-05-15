@@ -32,6 +32,13 @@ public:
 
 	//constructors
 
+	template<typename M>
+	Enable_if<Tensor_type<M>(), Tensor<T>&> mul(const M&m){
+		assert(m.order() == this->order());
+		assert(same_extents(desc_, m.descriptor()));
+		return apply(m, [&](T& a, const typename M::Value_type&b) {a *= b;});
+	}
+
 	Tensor() = default;
 	Tensor(Tensor&&) = default;
 	Tensor(const Tensor& x)
@@ -114,6 +121,10 @@ public:
 		m.req_grad_ = this->req_grad_;
 		m.desc_ = this->desc_;
 		this->elems_.share(m.elems_);
+	}
+
+	bool shares_data() const{
+		return (this->elems_.observers() > 1);
 	}
 
 	void fill(const T val){
@@ -1624,59 +1635,68 @@ template<typename T>
 Tensor<T>& Tensor<T>::operator+=(const T& val){
 	//return apply([&](T& a) {a += val;});
 
-	std::size_t i = 0;
-	if constexpr(std::is_same_v<T,float>){
-		if(size() >= 8){
-			__m256 val_vec = _mm256_set1_ps(val);
+	if(this->elems_.size() == this->desc_.size){
+		std::size_t i = 0;
 
-			for(; i <= size() - 8; i += 8){
-				__m256 data_vec = _mm256_loadu_ps(data() + i);
-				__m256 result_vec = _mm256_add_ps(data_vec, val_vec);
-				_mm256_storeu_ps(data() + i, result_vec);
+		if constexpr(std::is_same_v<T,float>){
+			if(size() >= 8){
+				__m256 val_vec = _mm256_set1_ps(val);
+
+				for(; i <= size() - 8; i += 8){
+					__m256 data_vec = _mm256_loadu_ps(data() + i);
+					__m256 result_vec = _mm256_add_ps(data_vec, val_vec);
+					_mm256_storeu_ps(data() + i, result_vec);
+				}
 			}
+
 		}
+		else if constexpr(std::is_same_v<T,double>){
+			if(size() >= 4){
+				__m256d val_vec = _mm256_set1_pd(val);
 
-	}
-	else if constexpr(std::is_same_v<T,double>){
-		if(size() >= 4){
-			__m256d val_vec = _mm256_set1_pd(val);
-
-			for(; i <= size() - 4; i += 4){
-				__m256d data_vec = _mm256_loadu_pd(data() + i);
-				__m256d result_vec = _mm256_add_pd(data_vec, val_vec);
-				_mm256_storeu_pd(data() + i, result_vec);
+				for(; i <= size() - 4; i += 4){
+					__m256d data_vec = _mm256_loadu_pd(data() + i);
+					__m256d result_vec = _mm256_add_pd(data_vec, val_vec);
+					_mm256_storeu_pd(data() + i, result_vec);
+				}
 			}
-		}
-		
-	}
-	else if constexpr(std::is_same_v<T,int>){
-		if(size() >= 8){
-			__m256i val_vec = _mm256_set1_epi32(val);
-
-			for(; i <= size() - 8; i += 8){
-				__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
-				__m256i result_vec = _mm256_add_epi32(data_vec, val_vec);
-				_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
-			}
-		}
-
-	}
-	else if constexpr(std::is_same_v<T,short>){
-		if(size() >= 16){
-			__m256i val_vec = _mm256_set1_epi16(val);
 			
-			for(; i <= size() - 16; i += 16){
-				__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
-				__m256i result_vec = _mm256_add_epi16(data_vec, val_vec);
-				_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
-			}
 		}
-		
+		else if constexpr(std::is_same_v<T,int>){
+			if(size() >= 8){
+				__m256i val_vec = _mm256_set1_epi32(val);
+
+				for(; i <= size() - 8; i += 8){
+					__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
+					__m256i result_vec = _mm256_add_epi32(data_vec, val_vec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+				}
+			}
+
+		}
+		else if constexpr(std::is_same_v<T,short>){
+			if(size() >= 16){
+				__m256i val_vec = _mm256_set1_epi16(val);
+				
+				for(; i <= size() - 16; i += 16){
+					__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
+					__m256i result_vec = _mm256_add_epi16(data_vec, val_vec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+				}
+			}
+			
+		}
+
+		for(; i < size(); ++i){
+			data()[i] += val;
+		}
+	}
+	else{
+		for(auto i = begin(); i != end(); ++i){
+			*i += val;
+		}
 	}
 
-	for(; i < size(); ++i){
-		data()[i] += val;
-	}
 
 	return *this;
 }
@@ -1685,58 +1705,66 @@ template<typename T>
 Tensor<T>& Tensor<T>::operator-=(const T& val){
 	//return apply([&](T& a) {a -= val;});
 
-	std::size_t i = 0;
-	if constexpr(std::is_same_v<T,float>){
-		if(size() >= 8){
-			__m256 val_vec = _mm256_set1_ps(val);
+	if(this->elems_.size() == this->desc_.size){
+		std::size_t i = 0;
 
-			for(; i <= size() - 8; i += 8){
-				__m256 data_vec = _mm256_loadu_ps(data() + i);
-				__m256 result_vec = _mm256_sub_ps(data_vec, val_vec);
-				_mm256_storeu_ps(data() + i, result_vec);
+		if constexpr(std::is_same_v<T,float>){
+			if(size() >= 8){
+				__m256 val_vec = _mm256_set1_ps(val);
+
+				for(; i <= size() - 8; i += 8){
+					__m256 data_vec = _mm256_loadu_ps(data() + i);
+					__m256 result_vec = _mm256_sub_ps(data_vec, val_vec);
+					_mm256_storeu_ps(data() + i, result_vec);
+				}
 			}
+
 		}
+		else if constexpr(std::is_same_v<T,double>){
+			if(size() >= 4){
+				__m256d val_vec = _mm256_set1_pd(val);
 
-	}
-	else if constexpr(std::is_same_v<T,double>){
-		if(size() >= 4){
-			__m256d val_vec = _mm256_set1_pd(val);
-
-			for(; i <= size() - 4; i += 4){
-				__m256d data_vec = _mm256_loadu_pd(data() + i);
-				__m256d result_vec = _mm256_sub_pd(data_vec, val_vec);
-				_mm256_storeu_pd(data() + i, result_vec);
+				for(; i <= size() - 4; i += 4){
+					__m256d data_vec = _mm256_loadu_pd(data() + i);
+					__m256d result_vec = _mm256_sub_pd(data_vec, val_vec);
+					_mm256_storeu_pd(data() + i, result_vec);
+				}
 			}
-		}
-		
-	}
-	else if constexpr(std::is_same_v<T,int>){
-		if(size() >= 8){
-			__m256i val_vec = _mm256_set1_epi32(val);
-
-			for(; i <= size() - 8; i += 8){
-				__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
-				__m256i result_vec = _mm256_sub_epi32(data_vec, val_vec);
-				_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
-			}
-		}
-
-	}
-	else if constexpr(std::is_same_v<T,short>){
-	       if(size() >= 16){
-			__m256i val_vec = _mm256_set1_epi16(val);
 			
-			for(; i <= size() - 16; i += 16){
-				__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
-				__m256i result_vec = _mm256_sub_epi16(data_vec, val_vec);
-				_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
-			}
-	       }
-		
-	}
+		}
+		else if constexpr(std::is_same_v<T,int>){
+			if(size() >= 8){
+				__m256i val_vec = _mm256_set1_epi32(val);
 
-	for(; i < size(); ++i){
-		data()[i] -= val;
+				for(; i <= size() - 8; i += 8){
+					__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
+					__m256i result_vec = _mm256_sub_epi32(data_vec, val_vec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+				}
+			}
+
+		}
+		else if constexpr(std::is_same_v<T,short>){
+		       if(size() >= 16){
+				__m256i val_vec = _mm256_set1_epi16(val);
+				
+				for(; i <= size() - 16; i += 16){
+					__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
+					__m256i result_vec = _mm256_sub_epi16(data_vec, val_vec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+				}
+		       }
+			
+		}
+
+		for(; i < size(); ++i){
+			data()[i] -= val;
+		}
+	}
+	else{
+		for(auto i = begin(); i != end(); ++i){
+			*i -= val;
+		}
 	}
 
 	return *this;
@@ -1746,57 +1774,65 @@ template<typename T>
 Tensor<T>& Tensor<T>::operator*=(const T& val){
 	//return apply([&](T& a) {a *= val;});
 	
-	std::size_t i = 0;
-	if constexpr(std::is_same_v<T,float>){
-		if(size() >= 8){
-			__m256 val_vec = _mm256_set1_ps(val);
+	if(this->elems_.size() == this->desc_.size){
+		std::size_t i = 0;
 
-			for(; i <= size() - 8; i += 8){
-				__m256 data_vec = _mm256_loadu_ps(data() + i);
-				__m256 result_vec = _mm256_mul_ps(data_vec, val_vec);
-				_mm256_storeu_ps(data() + i, result_vec);
+		if constexpr(std::is_same_v<T,float>){
+			if(size() >= 8){
+				__m256 val_vec = _mm256_set1_ps(val);
+
+				for(; i <= size() - 8; i += 8){
+					__m256 data_vec = _mm256_loadu_ps(data() + i);
+					__m256 result_vec = _mm256_mul_ps(data_vec, val_vec);
+					_mm256_storeu_ps(data() + i, result_vec);
+				}
 			}
+
 		}
+		else if constexpr(std::is_same_v<T,double>){
+			if(size() >= 4){
+				__m256d val_vec = _mm256_set1_pd(val);
 
-	}
-	else if constexpr(std::is_same_v<T,double>){
-		if(size() >= 4){
-			__m256d val_vec = _mm256_set1_pd(val);
-
-			for(; i <= size() - 4; i += 4){
-				__m256d data_vec = _mm256_loadu_pd(data() + i);
-				__m256d result_vec = _mm256_mul_pd(data_vec, val_vec);
-				_mm256_storeu_pd(data() + i, result_vec);
+				for(; i <= size() - 4; i += 4){
+					__m256d data_vec = _mm256_loadu_pd(data() + i);
+					__m256d result_vec = _mm256_mul_pd(data_vec, val_vec);
+					_mm256_storeu_pd(data() + i, result_vec);
+				}
 			}
-		}
-		
-	}
-	else if constexpr(std::is_same_v<T,int>){
-		if(size() >= 8){
-			__m256i val_vec = _mm256_set1_epi32(val);
-
-			for(; i <= size() - 8; i += 8){
-				__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
-				__m256i result_vec = _mm256_mullo_epi32(data_vec, val_vec);
-				_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
-			}
-		}
-	}
-	else if constexpr(std::is_same_v<T,short>){
-		if(size() >= 16){
-			__m256i val_vec = _mm256_set1_epi16(val);
 			
-			for(; i <= size() - 16; i += 16){
-				__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
-				__m256i result_vec = _mm256_mullo_epi16(data_vec, val_vec);
-				_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+		}
+		else if constexpr(std::is_same_v<T,int>){
+			if(size() >= 8){
+				__m256i val_vec = _mm256_set1_epi32(val);
+
+				for(; i <= size() - 8; i += 8){
+					__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
+					__m256i result_vec = _mm256_mullo_epi32(data_vec, val_vec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+				}
 			}
 		}
+		else if constexpr(std::is_same_v<T,short>){
+			if(size() >= 16){
+				__m256i val_vec = _mm256_set1_epi16(val);
+				
+				for(; i <= size() - 16; i += 16){
+					__m256i data_vec = _mm256_loadu_si256((__m256i*)(data() + i));
+					__m256i result_vec = _mm256_mullo_epi16(data_vec, val_vec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+				}
+			}
 
+		}
+
+		for(; i < size(); ++i){
+			data()[i] *= val;
+		}
 	}
-
-	for(; i < size(); ++i){
-		data()[i] *= val;
+	else{
+		for(auto i = begin(); i != end(); ++i){
+			*i *= val;
+		}
 	}
 
 	return *this;
@@ -1806,34 +1842,42 @@ template<typename T>
 Tensor<T>& Tensor<T>::operator/=(const T& val){
 	//return apply([&](T& a) {a /= val;});
 
-	std::size_t i = 0;
-	if constexpr(std::is_same_v<T,float>){
-		if(size() >= 8){
-			__m256 val_vec = _mm256_set1_ps(val);
+	if(this->elems_.size() == this->desc_.size){
+		std::size_t i = 0;
 
-			for(; i <= size() - 8; i += 8){
-				__m256 data_vec = _mm256_loadu_ps(data() + i);
-				__m256 result_vec = _mm256_div_ps(data_vec, val_vec);
-				_mm256_storeu_ps(data() + i, result_vec);
+		if constexpr(std::is_same_v<T,float>){
+			if(size() >= 8){
+				__m256 val_vec = _mm256_set1_ps(val);
+
+				for(; i <= size() - 8; i += 8){
+					__m256 data_vec = _mm256_loadu_ps(data() + i);
+					__m256 result_vec = _mm256_div_ps(data_vec, val_vec);
+					_mm256_storeu_ps(data() + i, result_vec);
+				}
 			}
+
+		}
+		else if constexpr(std::is_same_v<T,double>){
+			if(size() >= 4){
+				__m256d val_vec = _mm256_set1_pd(val);
+
+				for(; i <= size() - 4; i += 4){
+					__m256d data_vec = _mm256_loadu_pd(data() + i);
+					__m256d result_vec = _mm256_div_pd(data_vec, val_vec);
+					_mm256_storeu_pd(data() + i, result_vec);
+				}
+			}
+			
 		}
 
-	}
-	else if constexpr(std::is_same_v<T,double>){
-		if(size() >= 4){
-			__m256d val_vec = _mm256_set1_pd(val);
-
-			for(; i <= size() - 4; i += 4){
-				__m256d data_vec = _mm256_loadu_pd(data() + i);
-				__m256d result_vec = _mm256_div_pd(data_vec, val_vec);
-				_mm256_storeu_pd(data() + i, result_vec);
-			}
+		for(; i < size(); ++i){
+			data()[i] /= val;
 		}
-		
 	}
-
-	for(; i < size(); ++i){
-		data()[i] /= val;
+	else{
+		for(auto i = begin(); i != end(); ++i){
+			*i /= val;
+		}
 	}
 
 	return *this;
@@ -1850,6 +1894,7 @@ template<typename T>
 template<typename M, typename F>
 Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::apply(const M&other, F f){
 	assert(same_extents(this->desc_, other.descriptor()));
+
 	auto j = other.begin();
 	for(auto i = begin(); i != end(); ++i){
 		f(*i, *j);
@@ -1860,34 +1905,324 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::apply(const M&other, F f){
 
 template<typename T>
 template<typename M>
-Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&m){
-	assert(m.order() == this->order());
-	assert(same_extents(desc_, m.descriptor()));
+Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
+	/*
+	assert(other.order() == this->order());
+	assert(same_extents(desc_, other.descriptor()));
 	return apply(m, [&](T& a, const typename M::Value_type&b) {a += b;});
+	*/
+
+	if(!same_extents(desc_, other.descriptor()))
+		throw std::runtime_error("inconsistent dimensions");
+	if(other.order() != this->order())
+		throw std::runtime_error("orders must match");
+
+	if(this->elems_.size() == this->desc_.size &&
+		other.elems_.size() == other.descriptor().size &&
+		this->desc_.is_contiguous()){
+
+		std::size_t i = 0;
+		if constexpr(std::is_same_v<T,float>){
+			if(size() >= 8){
+				for(; i <= size() - 8; i += 8){
+					__m256 avec = _mm256_loadu_ps(data() + i);
+					__m256 bvec = _mm256_loadu_ps(other.data() + i);
+					__m256 result_vec = _mm256_add_ps(avec, bvec);
+					_mm256_storeu_ps(data() + i, result_vec);
+				}
+			}
+
+		}
+		else if constexpr(std::is_same_v<T,double>){
+			if(size() >= 4){
+				for(; i <= size() - 4; i += 4){
+					__m256d avec = _mm256_loadu_pd(data() + i);
+					__m256d bvec = _mm256_loadu_pd(other.data() + i);
+					__m256d result_vec = _mm256_add_pd(avec, bvec);
+					_mm256_storeu_pd(data() + i, result_vec);
+				}
+			}
+			
+		}
+		else if constexpr(std::is_same_v<T,int>){
+			if(size() >= 8){
+				for(; i <= size() - 8; i += 8){
+					__m256i avec = _mm256_loadu_si256(
+							(__m256i*)(data() + i));
+					__m256i bvec = _mm256_loadu_si256(
+							(__m256i*)other.data() + i);
+					__m256i result_vec = _mm256_add_epi32(avec, bvec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+				}
+			}
+
+		}
+		else if constexpr(std::is_same_v<T,short>){
+			if(size() >= 16){
+				for(; i <= size() - 16; i += 16){
+					__m256i avec = _mm256_loadu_si256(
+							(__m256i*)(data() + i));
+					__m256i bvec = _mm256_loadu_si256(
+							(__m256i*)other.data() + i);
+					__m256i result_vec = _mm256_add_epi16(avec, bvec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+				}
+			}
+			
+		}
+
+		for(; i < size(); ++i){
+			data()[i] += other.data()[i];
+		}
+	}
+	else{
+		auto j = other.begin();
+		for(auto i = begin(); i != end(); ++i){
+			*i += *j;
+			++j;
+		}
+	}
+
+	return *this;
 }
 
 template<typename T>
 template<typename M>
-Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator-=(const M&m){
+Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator-=(const M&other){
+	/*
 	assert(m.order() == this->order());
 	assert(same_extents(desc_, m.descriptor()));
 	return apply(m, [&](T& a, const typename M::Value_type&b) {a -= b;});
+	*/
+		
+	if(!same_extents(desc_, other.descriptor()))
+		throw std::runtime_error("inconsistent dimensions");
+	if(other.order() != this->order())
+		throw std::runtime_error("orders must match");
+
+	if(this->elems_.size() == this->desc_.size &&
+		other.elems_.size() == other.descriptor().size &&
+		this->desc_.is_contiguous()){
+
+		std::size_t i = 0;
+		if constexpr(std::is_same_v<T,float>){
+			if(size() >= 8){
+				for(; i <= size() - 8; i += 8){
+					__m256 avec = _mm256_loadu_ps(data() + i);
+					__m256 bvec = _mm256_loadu_ps(other.data() + i);
+					__m256 result_vec = _mm256_sub_ps(avec, bvec);
+					_mm256_storeu_ps(data() + i, result_vec);
+				}
+			}
+
+		}
+		else if constexpr(std::is_same_v<T,double>){
+			if(size() >= 4){
+				for(; i <= size() - 4; i += 4){
+					__m256d avec = _mm256_loadu_pd(data() + i);
+					__m256d bvec = _mm256_loadu_pd(other.data() + i);
+					__m256d result_vec = _mm256_sub_pd(avec, bvec);
+					_mm256_storeu_pd(data() + i, result_vec);
+				}
+			}
+			
+		}
+		else if constexpr(std::is_same_v<T,int>){
+			if(size() >= 8){
+				for(; i <= size() - 8; i += 8){
+					__m256i avec = _mm256_loadu_si256(
+							(__m256i*)(data() + i));
+					__m256i bvec = _mm256_loadu_si256(
+							(__m256i*)other.data() + i);
+					__m256i result_vec = _mm256_sub_epi32(avec, bvec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+				}
+			}
+
+		}
+		else if constexpr(std::is_same_v<T,short>){
+			if(size() >= 16){
+				for(; i <= size() - 16; i += 16){
+					__m256i avec = _mm256_loadu_si256(
+							(__m256i*)(data() + i));
+					__m256i bvec = _mm256_loadu_si256(
+							(__m256i*)other.data() + i);
+					__m256i result_vec = _mm256_sub_epi16(avec, bvec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+				}
+			}
+			
+		}
+
+		for(; i < size(); ++i){
+			data()[i] -= other.data()[i];
+		}
+	}
+	else{
+		auto j = other.begin();
+		for(auto i = begin(); i != end(); ++i){
+			*i -= *j;
+			++j;
+		}
+	}
+
+	return *this;
 }
 
 template<typename T>
 template<typename M>
-Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator*=(const M&m){
+Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator*=(const M&other){
+	/*
 	assert(m.order() == this->order());
 	assert(same_extents(desc_, m.descriptor()));
 	return apply(m, [&](T& a, const typename M::Value_type&b) {a *= b;});
+	*/
+
+	if(!same_extents(desc_, other.descriptor()))
+		throw std::runtime_error("inconsistent dimensions");
+	if(other.order() != this->order())
+		throw std::runtime_error("orders must match");
+
+	auto oit = other.begin();
+	auto it = this->begin();
+
+	if(this->elems_.size() == this->desc_.size &&
+		other.elems_.size() == other.descriptor().size &&
+		this->desc_.is_contiguous()){
+
+		std::size_t i = 0;
+		if constexpr(std::is_same_v<T,float>){
+			if(size() >= 8){
+				for(; i <= size() - 8; i += 8){
+					__m256 avec = _mm256_loadu_ps(data() + i);
+					__m256 bvec = _mm256_loadu_ps(other.data() + i);
+					__m256 result_vec = _mm256_mul_ps(avec, bvec);
+					_mm256_storeu_ps(data() + i, result_vec);
+				}
+			}
+
+		}
+		else if constexpr(std::is_same_v<T,double>){
+			if(size() >= 4){
+				for(; i <= size() - 4; i += 4){
+					__m256d avec = _mm256_loadu_pd(data() + i);
+					__m256d bvec = _mm256_loadu_pd(other.data() + i);
+					__m256d result_vec = _mm256_mul_pd(avec, bvec);
+					_mm256_storeu_pd(data() + i, result_vec);
+				}
+			}
+			
+		}
+		else if constexpr(std::is_same_v<T,int>){
+			if(size() >= 8){
+				for(; i <= size() - 8; i += 8){
+					__m256i avec = _mm256_loadu_si256(
+							(__m256i*)(data() + i));
+					__m256i bvec = _mm256_loadu_si256(
+							(__m256i*)other.data() + i);
+					__m256i result_vec = _mm256_mullo_epi32(avec, bvec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+				}
+
+				auto oit = other.begin();
+				for(auto it = this->begin(); it != this->end(); it += 8){
+					__m256i avec = _mm256_loadu_si256(
+							(__m256i*)(&(*it)));
+					__m256i bvec = _mm256_loadu_si256(
+							(__m256i*)(&(*oit)));
+					__m256i result_vec = _mm256_mullo_epi32(avec, bvec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+					oit += 8;
+					
+				}
+			}
+
+		}
+		else if constexpr(std::is_same_v<T,short>){
+			if(size() >= 16){
+				for(; i <= size() - 16; i += 16){
+					__m256i avec = _mm256_loadu_si256(
+							(__m256i*)(data() + i));
+					__m256i bvec = _mm256_loadu_si256(
+							(__m256i*)other.data() + i);
+					__m256i result_vec = _mm256_mullo_epi16(avec, bvec);
+					_mm256_storeu_si256((__m256i*)(data() + i), result_vec);
+				}
+			}
+			
+		}
+
+		for(; i < size(); ++i){
+			data()[i] *= other.data()[i];
+		}
+	}
+	else{
+		auto j = other.begin();
+		for(auto i = begin(); i != end(); ++i){
+			*i *= *j;
+			++j;
+		}
+	}
+
+
+	return *this;
 }
 
 template<typename T>
 template<typename M>
-Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator/=(const M&m){
+Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator/=(const M&other){
+	/*
 	assert(m.order() == this->order());
 	assert(same_extents(desc_, m.descriptor()));
 	return apply(m, [&](T& a, const typename M::Value_type&b) {a /= b;});
+	*/
+
+	if(!same_extents(desc_, other.descriptor()))
+		throw std::runtime_error("inconsistent dimensions");
+	if(other.order() != this->order())
+		throw std::runtime_error("orders must match");
+
+	if(this->elems_.size() == this->desc_.size &&
+		other.elems_.size() == other.descriptor().size &&
+		this->desc_.is_contiguous()){
+
+		std::size_t i = 0;
+		if constexpr(std::is_same_v<T,float>){
+			if(size() >= 8){
+				for(; i <= size() - 8; i += 8){
+					__m256 avec = _mm256_loadu_ps(data() + i);
+					__m256 bvec = _mm256_loadu_ps(other.data() + i);
+					__m256 result_vec = _mm256_div_ps(avec, bvec);
+					_mm256_storeu_ps(data() + i, result_vec);
+				}
+			}
+
+		}
+		else if constexpr(std::is_same_v<T,double>){
+			if(size() >= 4){
+				for(; i <= size() - 4; i += 4){
+					__m256d avec = _mm256_loadu_pd(data() + i);
+					__m256d bvec = _mm256_loadu_pd(other.data() + i);
+					__m256d result_vec = _mm256_div_pd(avec, bvec);
+					_mm256_storeu_pd(data() + i, result_vec);
+				}
+			}
+			
+		}
+
+		for(; i < size(); ++i){
+			data()[i] /= other.data()[i];
+		}
+	}
+	else{
+		auto j = other.begin();
+		for(auto i = begin(); i != end(); ++i){
+			*i /= *j;
+			++j;
+		}
+	}
+
+	return *this;
 }
 
 template<typename T>

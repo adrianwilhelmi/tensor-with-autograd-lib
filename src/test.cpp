@@ -18,15 +18,41 @@ int main(){
 		{31, 12, 3},
 	}, true);
 
-	Tensor<int> tr1 = tensor::random_normal(0.0, 1.0, 9, 10);
-	Tensor<int> tr2 = tensor::random_normal(0.0, 1.0, 9, 10);
+	Tensor<float> tr1 = tensor::random_normal(0.0, 1.0, 4000, 4000);
+	Tensor<float> tr2 = tensor::random_normal(0.0, 1.0, 4000, 4000);
 
+
+	/*
 	std::cout << tr1 << std::endl;
 	std::cout << tr2 << std::endl;
 
 	tr1 *= tr2;
 
 	std::cout << tr1 << std::endl;
+	*/
+
+
+
+	auto start = std::chrono::high_resolution_clock::now();
+
+	tr1 *= tr2;
+
+	auto stop = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
+	std::cout << "optim: " << duration.count() << std::endl;
+
+	start = std::chrono::high_resolution_clock::now();
+
+	tr1.mul(tr2);
+
+	stop = std::chrono::high_resolution_clock::now();
+	duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
+	std::cout << "clasic: " << duration.count() << std::endl;
+
+
+
 
 
 
