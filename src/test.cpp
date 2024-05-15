@@ -33,6 +33,7 @@ int main(){
 
 
 
+	/*
 	auto start = std::chrono::high_resolution_clock::now();
 
 	tr1 *= tr2;
@@ -51,7 +52,16 @@ int main(){
 
 	std::cout << "clasic: " << duration.count() << std::endl;
 
+	*/
 
+	auto ri = tensor::randint(0, 10, 4, 4);
+
+	std::cout << ri << std::endl;
+
+
+	auto rib = ri.broadcast(3, 4, 4);
+
+	std::cout << rib << std::endl;
 
 
 

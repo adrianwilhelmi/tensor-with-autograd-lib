@@ -8,23 +8,26 @@
 #include"tensor_lib.hpp"
 
 template<typename T = float>
-std::pair<std::vector<Tensor<float>>, std::vector<Tensor<float>>> csv_to_tensors(const std::string& file_path,
+std::pair<Tensor<T>, Tensor<T>> csv_to_tensors(const std::string& file_path,
 		std::size_t num_imgs){
 	std::ifstream file(file_path);
 	if(!file.is_open())
 		throw std::runtime_error("failed to open file: " + file_path);
 
-	std::vector<Tensor<float>> imgs;
-	std::vector<Tensor<float>> labels;
+	//std::vector<Tensor<float>> imgs;
+	//std::vector<Tensor<float>> labels;
+
+	Tensor<float> imgs(num_imgs, 28 * 28);
+	Tensor<float> labels(num_imgs, 1, 10);
 
 	std::string row;
 	std::getline(file, row);
-
+ 
 	std::size_t count = 0;
 	while(std::getline(file, row) && count < num_imgs){
 		std::istringstream ss(row);
 		std::string token;
-		Tensor<T> img(28,28);
+		Tensor<T> img(28*28);
 		img.enable_grad();
 		int j = 0;
 
@@ -33,14 +36,18 @@ std::pair<std::vector<Tensor<float>>, std::vector<Tensor<float>>> csv_to_tensors
 				Tensor<int> temp = std::stoi(token);
 				Tensor<float> t = temp.one_hot<float>(10);
 
-				labels.push_back(t);
+				labels[count] += t;
+				//labels.push_back(t);
 			}
 			else{
 				img.data()[(j - 1)] = std::stoi(token) / 255.0;
 			}
 			++j;
 		}
-		imgs.push_back(std::move(img));
+
+		imgs[count] += img;
+		//imgs.push_back(std::move(img));
+   
 		++count;
 	}
 	
@@ -50,7 +57,7 @@ std::pair<std::vector<Tensor<float>>, std::vector<Tensor<float>>> csv_to_tensors
 
 template<typename T>
 Tensor<T> forward(
-		Tensor<T>& X,
+		const Tensor<T>& X,
 		Tensor<T>& W1,
 		Tensor<T>& B1,
 		Tensor<T>& W2,
@@ -64,24 +71,30 @@ Tensor<T> forward(
 	return omm + B2;
 }
 
-int main(){
+void mnist(){
 	//load imgs into tensors
 
 	const std::string train_path = "./examples/dataset/mnist_train.csv";
 	const std::string test_path = "./examples/dataset/mnist_test.csv";
 
-	const std::size_t num_imgs = 30000;
+	const std::size_t num_imgs = 2000;
 
-	auto [train_img, labels] = csv_to_tensors<float>(train_path, num_imgs);
-	auto [test_img, test_labels] = csv_to_tensors<float>(test_path, 
-			100 * num_imgs);
+	auto [X, Y] = csv_to_tensors<float>(train_path, num_imgs);
+	auto [X_test, Y_test] = csv_to_tensors<float>(test_path, 
+			10 * num_imgs);
 
 
+
+	std::cout << "X shape" << std::endl;
+	std::cout << X.descriptor() << std::endl;
+
+	std::cout << "Y shape" << std::endl;
+	std::cout << Y.descriptor() << std::endl;
 
 	//initialize net params
 
 	const std::size_t input_size = 28 * 28;
-	const std::size_t hidden_size = 128;
+	const std::size_t hidden_size = 32;
 	const std::size_t output_classes = 10;
 
 	Tensor<float> W1 = tensor::random_normal<float>(
@@ -96,9 +109,11 @@ int main(){
 	W2.enable_grad();
 	B2.enable_grad();
 
-	const std::size_t num_epochs = 1;
+	const std::size_t num_epochs = 20;
 	float learning_rate = 0.1;
 	
+	const std::size_t batch_size = 50;
+	const std::size_t num_batches = num_imgs / batch_size;
 
 
 
@@ -114,15 +129,30 @@ int main(){
 
 		start = std::chrono::high_resolution_clock::now();
 		
-
 		if(epoch == 30)
 			learning_rate /= 10.0;
 
 
-		for(std::size_t i = 0; i < num_imgs; ++i){
-			Tensor<float> X_flat = train_img[i].reshape(1,28*28);
+		for(std::size_t batch = 0; batch < num_batches; ++batch){
+
+			//minibatch
+
+			/*
+			std::size_t start_index = tensor::randint(0, 
+					num_imgs - batch_size - 1, 1).item();
+			*/
+
+			std::size_t start_index = batch * batch_size;
+
+			Tensor<float> X_batch = X.dimslices(0, 
+					start_index, start_index + batch_size);
+			Tensor<float> Y_batch = Y.dimslices(0,
+					start_index, start_index + batch_size);
+
+
+			//Tensor<float> X_flat = X[i].reshape(1,28*28);
 			auto output = forward<float>(
-					X_flat,
+					X_batch,
 					W1,
 					B1,
 					W2,
@@ -130,9 +160,9 @@ int main(){
 					);
 
 			auto loss = tensor::cross_entropy<float>(output, 
-								labels[i]);
+								Y_batch);
 			loss.backward();
-			std::cout << "loss: " << loss;
+			//std::cout << "loss: " << loss;
 
 			W2 -= learning_rate * W2.grad();
 			B2 -= learning_rate * B2.grad();
@@ -159,10 +189,10 @@ int main(){
 	
 	std::size_t success = 0;
 
-	for(std::size_t i = 0; i < test_img.size(); ++i){
-		Tensor<float> X_flat = test_img[i].reshape(1,28*28);
+	for(std::size_t i = 0; i < Y_test.size(); ++i){
+		//Tensor<float> X_flat = test_img[i].reshape(1,28*28);
 		auto output = forward<float>(
-				X_flat,
+				X_test[i],
 				W1,
 				B1,
 				W2,
@@ -170,13 +200,19 @@ int main(){
 				);
 
 		auto max_index = output.softmax().argmax()[1];
-		if(max_index == test_labels[i].argmax()[1])
+		if(max_index == Y_test[i].argmax()[1])
 			success++;
 	}
 
-	float accuracy = static_cast<float>(success) / static_cast<float>(test_img.size());
+	float accuracy = static_cast<float>(success) / 
+			static_cast<float>(Y_test.size());
 
 	std::cout << "accuracy: " << accuracy << std::endl;
+
+}
+
+int main(){
+	mnist();
 
 	return 0;
 }

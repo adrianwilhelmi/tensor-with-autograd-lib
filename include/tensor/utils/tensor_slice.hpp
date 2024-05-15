@@ -121,4 +121,93 @@ std::ostream&operator<<(std::ostream&os, const TensorSlice&s){
 	return os;
 }
 
+namespace ts{
+	bool are_broadcastable(const std::vector<std::size_t>& dims1,
+				const std::vector<std::size_t>& dims2){
+
+		auto it1 = dims1.rbegin();
+		auto it2 = dims2.rbegin();
+
+		while(it1 != dims1.rend() || it2 != dims2.rend()){
+			if(it1 != dims1.rend() && it2 != dims2.rend()){
+				if(*it1 != *it2 && *it1 != 1 && *it2 != 1){
+					return false;
+				}
+			}
+
+			if(it1 != dims1.rend()) ++it1;
+			if(it2 != dims2.rend()) ++it2;
+		}
+
+		return true;
+	}
+
+	std::vector<std::size_t> calculate_broadcast_exts(
+			const std::vector<std::size_t>& dims1,
+		       	const std::vector<std::size_t>& dims2){
+		std::vector<std::size_t> res;
+
+		auto it1 = dims1.rbegin();
+		auto it2 = dims2.rbegin();
+
+		while(it1 != dims1.rend() || it2 != dims2.rend()){
+			std::size_t dim1 = (it1 != dims1.rend() ? *it1 : 1);
+			std::size_t dim2 = (it2 != dims2.rend() ? *it2 : 1);
+
+			res.push_back(std::max(dim1,dim2));
+
+			if(it1 != dims1.rend()) ++it1;
+			if(it2 != dims2.rend()) ++it2;
+		}
+		std::reverse(res.begin(), res.end());
+		return res;
+	}
+
+	std::vector<std::size_t> calculate_broadcast_strides(
+			const std::vector<std::size_t>& exts,
+			const TensorSlice& og){
+		std::vector<std::size_t> result(exts.size(), 0);
+
+
+		/*
+		long og_size = og.extents.size();
+		for(long i = exts.size() - 1; i >= 0; --i){
+			std::size_t og_dim = i < og_size ? og.extents[i] : 1;
+			if(og_dim == exts[i]){
+				result[i] = og.strides[i];
+			}
+			else if(og_dim == 1 && exts[i] > 1){
+				result[i] = 0;
+			}
+		}
+		*/
+
+		long size = std::min(og.extents.size(), exts.size());
+		long diff = exts.size() - size;
+		for(long i = 0; i < size; ++i){
+			if(og.extents[i] == exts[i + diff]){
+				result[i + diff] = og.strides[i];
+			}
+			else{
+				result[i] = 0;
+			}
+		}
+
+		return result;
+	}
+
+	TensorSlice broadcast_descriptor(const TensorSlice& ts, 
+				const std::vector<std::size_t>& new_exts){
+
+		TensorSlice d;
+		d.extents = ts::calculate_broadcast_exts(ts.extents, new_exts);
+		d.strides = ts::calculate_broadcast_strides(new_exts, ts);
+		d.compute_size();
+		d.start = ts.start;
+
+		return d;
+	}
+
+}; //namespace tensor_slice
+
 #endif //TENSOR_SLICE_HPP_

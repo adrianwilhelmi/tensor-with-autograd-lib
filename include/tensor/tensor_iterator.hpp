@@ -220,22 +220,6 @@ void TensorIterator<T>::increment(){
 			break;
 		};
 	}
-	/*
-
-	std::size_t d = 0;
-	while(d < desc.extents.size()){
-		++index[d];
-		ptr += desc.strides[d];
-
-		if(index[d] < desc.extents[d]){
-			return;
-		}
-
-		ptr -= index[d] * desc.strides[d];
-		index[d] = 0;
-		++d;
-	}
-	*/
 }
 
 template<typename T>

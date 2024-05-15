@@ -212,6 +212,37 @@ namespace tensor{
 		return res;
 	}
 
+	template<typename T = int, typename... Exts>
+	Tensor<T> randint(const int min, const int max, const Exts... exts){
+		Tensor<T> res(exts...);
+
+		auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		std::mt19937 gen(seed);
+		std::uniform_int_distribution<T> dist(min, max);
+
+		for(auto it = res.begin(); it != res.end(); ++it){
+			*it = dist(gen);
+		}
+
+		return res;
+	}
+
+	template<typename T = int>
+	Tensor<T> randint(const int min, const int max, const Tensor<T>& t){
+		Tensor<T> res = t.copy_dims();
+
+		auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		std::mt19937 gen(seed);
+		std::uniform_int_distribution<T> dist(min, max);
+
+		for(auto it = res.begin(); it != res.end(); ++it){
+			*it = dist(gen);
+		}
+
+		return res;
+	}
+
+
 	template<typename U, typename T = std::size_t>
 	Tensor<T> random_multinomial(const Tensor<U>& probs, 
 			std::size_t num_samples, bool replacement = true){

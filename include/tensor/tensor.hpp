@@ -180,6 +180,16 @@ public:
 		Tensor<const T>>
 	reshape(Args... args) const;
 
+	template<typename... Args>
+	Enable_if<tensor_impl::Requesting_element<Args...>(),
+		Tensor<T>>
+	broadcast(Args... args);
+	template<typename... Args>
+	Enable_if<tensor_impl::Requesting_element<Args...>(),
+		Tensor<const T>>
+	broadcast(Args... args) const;
+
+
 	template<typename U = std::size_t>
 	Tensor<U> argmax(){
 		TensorSlice d({this->order()});
@@ -1299,6 +1309,7 @@ Tensor<T>::dimslices(std::size_t dim, Args... args){
 	std::sort(indexes.begin(), indexes.end());
 	d.start += indexes.front() * this->desc_.strides[dim];
 
+
 	d.strides[dim] *= (indexes[1] - indexes[0]);
 
 	Tensor<T> res(d, this->elems_);
@@ -1560,6 +1571,76 @@ Tensor<T>::reshape(Args... args) const {
 		return res;
 	}
 }
+
+template<typename T>
+template<typename... Args>
+Enable_if<tensor_impl::Requesting_element<Args...>(), Tensor<T>>
+Tensor<T>::broadcast(Args... args){
+	std::vector<std::size_t> exts{static_cast<std::size_t>(args)...};
+
+	if(!ts::are_broadcastable(this->desc_.extents, exts))
+		throw std::runtime_error("not broadcastable");
+
+	TensorSlice desc = ts::broadcast_descriptor(this->desc_, exts);
+	
+	return {desc, this->elems_};
+
+}
+
+template<typename T>
+template<typename... Args>
+Enable_if<tensor_impl::Requesting_element<Args...>(), Tensor<const T>>
+Tensor<T>::broadcast(Args... args) const{
+	std::size_t args_product = (... * args);
+	std::size_t exts_product = std::accumulate(this->desc_.extents.begin(),
+			this->desc_.extents.end(), 1, [](std::size_t a,
+				std::size_t b) {return a * b;});
+
+	if(args_product % exts_product != 0)
+		throw std::runtime_error(
+				"dimensions not suitable for broadcasting");
+
+	const bool cont = this->desc_.is_contiguous();
+
+	std::size_t dim = std::numeric_limits<std::size_t>::max();
+
+	for(std::size_t i = 0; i < this->order(); ++i){
+		if(extent(i) * exts_product == args_product)
+			dim = i;
+	}
+
+	if(dim == std::numeric_limits<std::size_t>::max())
+		throw std::runtime_error("cannot find suitable dim to broadcast");
+
+
+	std::vector<std::size_t> exts{static_cast<std::size_t>(args)...};
+	TensorSlice d{exts};
+
+	d.strides[dim] = 0;
+
+
+	if(cont){
+		Tensor<T> res{d, this->elems_};
+		return res;
+	}
+	else{
+		d.compute_strides();
+		Tensor<T> res(d);
+		auto rit = res.begin();
+		for(std::size_t j = 0; j < dim; ++j){
+			auto it = this->begin();
+			for(std::size_t i = 0; i < this->size(); ++i){
+				*rit = *it;
+				++it;
+				++rit;
+			}
+		}
+
+		return res;
+	}
+	
+}
+
 
 template<typename T>
 Tensor<T> Tensor<T>::rot180(){
