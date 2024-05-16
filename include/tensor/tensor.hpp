@@ -32,13 +32,6 @@ public:
 
 	//constructors
 
-	template<typename M>
-	Enable_if<Tensor_type<M>(), Tensor<T>&> mul(const M&m){
-		assert(m.order() == this->order());
-		assert(same_extents(desc_, m.descriptor()));
-		return apply(m, [&](T& a, const typename M::Value_type&b) {a *= b;});
-	}
-
 	Tensor() = default;
 	Tensor(Tensor&&) = default;
 	Tensor(const Tensor& x)
@@ -56,7 +49,7 @@ public:
 	Tensor(const std::size_t size, const T& fill_val = T(0)) 
 		: desc_({size}), elems_(size), node(nullptr), req_grad_(false){
 		this->desc_.size = size;
-		for(auto it = this->begin(); it != this->end; ++it){
+		for(auto it = this->begin(); it != this->end(); ++it){
 			*it = fill_val;
 		}
 	}
@@ -1145,15 +1138,6 @@ Tensor<T>::Tensor(Exts... exts)
 	: desc_(exts...),
 	elems_(desc_.size),
 	req_grad_(false){
-
-		/*
-	if(req_grad){
-		this->node = std::make_shared<Node<T>>(*this);
-	}
-	else{
-		this->node = nullptr;
-	}
-	*/
 	this->node = nullptr;
 }
 
@@ -1281,8 +1265,6 @@ Tensor<const T> Tensor<T>::dimslice(const std::size_t n,
 
 	ts.start = this->desc_.start + m * this->desc_.strides[n];
 	ts.compute_size();
-
-	//Tensor<const T> res(ts, this->elems_);
 
 	return Tensor<const T>(ts, this->elems_);
 }
@@ -1582,7 +1564,7 @@ Tensor<T>::broadcast(Args... args){
 		throw std::runtime_error("not broadcastable");
 
 	TensorSlice desc = ts::broadcast_descriptor(this->desc_, exts);
-	
+
 	return {desc, this->elems_};
 
 }
@@ -1984,6 +1966,7 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::apply(const M&other, F f){
 	return*this;
 }
 
+
 template<typename T>
 template<typename M>
 Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
@@ -1993,13 +1976,65 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 	return apply(m, [&](T& a, const typename M::Value_type&b) {a += b;});
 	*/
 
-	if(!same_extents(desc_, other.descriptor()))
-		throw std::runtime_error("inconsistent dimensions");
+
+	/*
 	if(other.order() != this->order())
 		throw std::runtime_error("orders must match");
+		*/
+
+	if(!same_extents(desc_, other.descriptor())){
+
+		std::size_t this_exts_prod = std::accumulate(
+				this->desc_.extents.begin(),
+				this->desc_.extents.end(), 1, 
+				[](std::size_t a, std::size_t b) {return a * b;});
+
+		auto odesc = other.descriptor();
+		std::size_t other_exts_prod = 1;
+		for(std::size_t i = 0; i < odesc.extents.size(); ++i){
+			other_exts_prod *= odesc.extents[i];
+		}
+
+		std::cout << this_exts_prod << std::endl;
+		std::cout << other_exts_prod << std::endl;
+		std::cout << (other_exts_prod % this_exts_prod) << std::endl;
+		std::cout << (other_exts_prod % this_exts_prod) << std::endl;
+
+		if(this_exts_prod % other_exts_prod == 0){
+			std::size_t extent = this_exts_prod / other_exts_prod;
+			std::size_t extent_index = order();
+			for(std::size_t i = 0; i < order(); ++i){
+				if(extent == this->extent(i))
+					extent_index = i;
+			}
+
+			for(std::size_t i = 0; i < extent; ++i){
+				this->dimslices_arange(extent_index, i, i)
+					+= other;
+			}
+
+			return *this;
+		}
+		else if(other_exts_prod % this_exts_prod == 0){
+			std::size_t extent = other_exts_prod / this_exts_prod;
+			std::size_t extent_index = order();
+			for(std::size_t i = 0; i < order(); ++i){
+				if(extent == other.extent(i))
+					extent_index = i;
+			}
+
+			auto temp = other;
+			*this += temp.sum(extent_index);
+
+		}
+		else
+			throw std::runtime_error("inconsistent dimensions");
+
+	}
+
 
 	if(this->elems_.size() == this->desc_.size &&
-		other.elems_.size() == other.descriptor().size &&
+		other.storage().size() == other.descriptor().size &&
 		this->desc_.is_contiguous()){
 
 		std::size_t i = 0;

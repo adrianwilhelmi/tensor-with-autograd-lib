@@ -56,12 +56,47 @@ int main(){
 
 	auto ri = tensor::randint(0, 10, 4, 4);
 
+	Tensor<int> ri3(3,4,4);
+
+	ri3.row(0) += ri;
+	ri3.row(1) += ri;
+	ri3.row(2) += ri;
+
+	std::cout << ri << std::endl;
+	std::cout << ri3 << std::endl;
+
+	ri3 += ri.reshape(1,4,4);
+
+	std::cout << ri3 << std::endl;
+
+	ri += ri3;
+
 	std::cout << ri << std::endl;
 
 
+	/*
 	auto rib = ri.broadcast(3, 4, 4);
 
 	std::cout << rib << std::endl;
+
+	std::cout << rib.descriptor() << std::endl;
+	std::cout << rib.storage() << std::endl;
+
+
+	auto it = rib2.begin();
+	for(std::size_t i = 0; i < 4 * 4 * 4 * 10; ++i){
+		std::cout << *it << " ";
+		++it;
+	}
+	std::cout << std::endl;
+	
+	//rib += 2;
+
+	std::cout << rib << std::endl;
+	*/
+
+
+	
 
 
 

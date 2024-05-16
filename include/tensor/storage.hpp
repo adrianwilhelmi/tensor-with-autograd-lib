@@ -74,7 +74,7 @@ public:
 			std::copy(list.begin(), list.end(), data_.get());
 	}
 
-	void share(Storage& other){
+	void share(Storage& other) {
 		if(this != &other){
 			other.data_ = this->data_;
 			other.size_ = this->size_;

@@ -102,7 +102,6 @@ TensorIterator<T>::TensorIterator(const TensorSlice&s, T*base, bool limit)
 	if(s.size != 0)
 		index[0] = desc.extents[0];
 
-
 	this->end = base + s.offset(index);
 	this->begin = base + s.start;
 

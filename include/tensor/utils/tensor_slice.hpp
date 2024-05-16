@@ -168,31 +168,13 @@ namespace ts{
 			const TensorSlice& og){
 		std::vector<std::size_t> result(exts.size(), 0);
 
-
-		/*
-		long og_size = og.extents.size();
-		for(long i = exts.size() - 1; i >= 0; --i){
-			std::size_t og_dim = i < og_size ? og.extents[i] : 1;
-			if(og_dim == exts[i]){
-				result[i] = og.strides[i];
-			}
-			else if(og_dim == 1 && exts[i] > 1){
-				result[i] = 0;
-			}
+		auto og_size = og.extents.size();
+		for(long i = exts.size() - 1, j = og_size - 1; i >= 0; --i, --j){
+			result[i] = (og.extents[j] == exts[i] ||
+					og.extents[j] == 1)
+				? og.strides[j] : 0;
 		}
-		*/
-
-		long size = std::min(og.extents.size(), exts.size());
-		long diff = exts.size() - size;
-		for(long i = 0; i < size; ++i){
-			if(og.extents[i] == exts[i + diff]){
-				result[i + diff] = og.strides[i];
-			}
-			else{
-				result[i] = 0;
-			}
-		}
-
+	
 		return result;
 	}
 
