@@ -18,41 +18,11 @@ int main(){
 		{31, 12, 3},
 	}, true);
 
-	Tensor<float> tr1 = tensor::random_normal(0.0, 1.0, 4000, 4000);
-	Tensor<float> tr2 = tensor::random_normal(0.0, 1.0, 4000, 4000);
-
-
-	/*
-	std::cout << tr1 << std::endl;
-	std::cout << tr2 << std::endl;
-
-	tr1 *= tr2;
-
-	std::cout << tr1 << std::endl;
-	*/
+	//Tensor<float> tr1 = tensor::random_normal(0.0, 1.0, 4000, 4000);
+	//Tensor<float> tr2 = tensor::random_normal(0.0, 1.0, 4000, 4000);
 
 
 
-	/*
-	auto start = std::chrono::high_resolution_clock::now();
-
-	tr1 *= tr2;
-
-	auto stop = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-
-	std::cout << "optim: " << duration.count() << std::endl;
-
-	start = std::chrono::high_resolution_clock::now();
-
-	tr1.mul(tr2);
-
-	stop = std::chrono::high_resolution_clock::now();
-	duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-
-	std::cout << "clasic: " << duration.count() << std::endl;
-
-	*/
 
 	auto ri = tensor::randint(0, 10, 4, 4);
 
@@ -63,40 +33,37 @@ int main(){
 	ri3.row(2) += ri;
 
 	std::cout << ri << std::endl;
-	std::cout << ri3 << std::endl;
 
 	ri3 += ri.reshape(1,4,4);
+
+	std::cout << ri3 << std::endl;
+
+	ri.view(1,4,4) += ri3;
+
+	std::cout << ri << std::endl;
+
+	
+	/*
+	auto ri = tensor::randint(0, 10, 1, 4);
+
+	Tensor<int> ri3(3,4);
+
+	ri3.row(0) += ri.view(4);
+	ri3.row(1) += ri.view(4);
+	ri3.row(2) += ri.view(4);
+
+	std::cout << ri << std::endl;
+	std::cout << ri3 << std::endl;
+
+	ri3 += ri;
 
 	std::cout << ri3 << std::endl;
 
 	ri += ri3;
 
 	std::cout << ri << std::endl;
-
-
-	/*
-	auto rib = ri.broadcast(3, 4, 4);
-
-	std::cout << rib << std::endl;
-
-	std::cout << rib.descriptor() << std::endl;
-	std::cout << rib.storage() << std::endl;
-
-
-	auto it = rib2.begin();
-	for(std::size_t i = 0; i < 4 * 4 * 4 * 10; ++i){
-		std::cout << *it << " ";
-		++it;
-	}
-	std::cout << std::endl;
-	
-	//rib += 2;
-
-	std::cout << rib << std::endl;
 	*/
 
-
-	
 
 
 

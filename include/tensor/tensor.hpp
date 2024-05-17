@@ -134,8 +134,25 @@ public:
 	Enable_if<tensor_impl::Requesting_element<Args...>(), const T&>
 	operator()(Args... args) const;
 
+	/*
 	Tensor<T> operator()(const TensorSlice& d) {return {d, this->elems_};}
 	Tensor<const T> operator()(const TensorSlice& d) const {return {d, this->elems_};}
+	*/
+
+
+
+	Tensor<T> operator()(const TensorSlice& d) {
+		TensorSlice ts = d;
+		ts.start = this->desc_.start;
+		return {ts, this->elems_};
+	}
+	Tensor<const T> operator()(const TensorSlice& d) const {
+		TensorSlice ts = d;
+		ts.start = this->desc_.start;
+		return {ts, this->elems_};
+	}
+
+
 
 	T& item() {return elems_[desc_.start];}
 	const T& item() const {return elems_[desc_.start];}
@@ -1977,10 +1994,8 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 	*/
 
 
-	/*
 	if(other.order() != this->order())
 		throw std::runtime_error("orders must match");
-		*/
 
 	if(!same_extents(desc_, other.descriptor())){
 
@@ -1995,11 +2010,6 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 			other_exts_prod *= odesc.extents[i];
 		}
 
-		std::cout << this_exts_prod << std::endl;
-		std::cout << other_exts_prod << std::endl;
-		std::cout << (other_exts_prod % this_exts_prod) << std::endl;
-		std::cout << (other_exts_prod % this_exts_prod) << std::endl;
-
 		if(this_exts_prod % other_exts_prod == 0){
 			std::size_t extent = this_exts_prod / other_exts_prod;
 			std::size_t extent_index = order();
@@ -2009,7 +2019,8 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 			}
 
 			for(std::size_t i = 0; i < extent; ++i){
-				this->dimslices_arange(extent_index, i, i)
+				this->dimslices_arange(extent_index, i, i)(
+						other.descriptor())
 					+= other;
 			}
 
@@ -2024,8 +2035,10 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 			}
 
 			auto temp = other;
-			*this += temp.sum(extent_index);
+			for(std::size_t i = 0; i < extent; ++i)
+				*this += temp.dimslices_arange(extent_index,i,i);
 
+			return *this;
 		}
 		else
 			throw std::runtime_error("inconsistent dimensions");
