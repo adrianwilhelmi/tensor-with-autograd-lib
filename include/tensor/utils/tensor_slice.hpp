@@ -97,7 +97,7 @@ struct TensorSlice{
 	std::vector<std::size_t> strides;
 };
 
-bool same_extents(const TensorSlice&a, const TensorSlice&b){
+inline bool same_extents(const TensorSlice&a, const TensorSlice&b){
 	return a.extents == b.extents;
 }
 
@@ -110,7 +110,7 @@ inline bool operator!=(const TensorSlice&a, const TensorSlice&b){
 	return !(a==b);
 }
 
-std::ostream&operator<<(std::ostream&os, const TensorSlice&s){
+inline std::ostream&operator<<(std::ostream&os, const TensorSlice&s){
 	os << "size = " << s.size << std::endl;
 	os << "start = " << s.start << std::endl;
 	os << "extents = ";
@@ -122,7 +122,7 @@ std::ostream&operator<<(std::ostream&os, const TensorSlice&s){
 }
 
 namespace ts{
-	bool are_broadcastable(const std::vector<std::size_t>& dims1,
+	inline bool are_broadcastable(const std::vector<std::size_t>& dims1,
 				const std::vector<std::size_t>& dims2){
 
 		auto it1 = dims1.rbegin();
@@ -142,7 +142,7 @@ namespace ts{
 		return true;
 	}
 
-	std::vector<std::size_t> calculate_broadcast_exts(
+	inline std::vector<std::size_t> calculate_broadcast_exts(
 			const std::vector<std::size_t>& dims1,
 		       	const std::vector<std::size_t>& dims2){
 		std::vector<std::size_t> res;
@@ -163,7 +163,7 @@ namespace ts{
 		return res;
 	}
 
-	std::vector<std::size_t> calculate_broadcast_strides(
+	inline std::vector<std::size_t> calculate_broadcast_strides(
 			const std::vector<std::size_t>& exts,
 			const TensorSlice& og){
 		std::vector<std::size_t> result(exts.size(), 0);
@@ -178,7 +178,7 @@ namespace ts{
 		return result;
 	}
 
-	TensorSlice broadcast_descriptor(const TensorSlice& ts, 
+	inline TensorSlice broadcast_descriptor(const TensorSlice& ts, 
 				const std::vector<std::size_t>& new_exts){
 
 		TensorSlice d;

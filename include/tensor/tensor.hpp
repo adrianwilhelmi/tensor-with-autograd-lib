@@ -199,6 +199,16 @@ public:
 		Tensor<const T>>
 	broadcast(Args... args) const;
 
+	Tensor<T> expand(const std::size_t dim){
+		Tensor<Tensor<T>> expanded(this->extent(dim));
+
+		for(std::size_t i = 0; i < this->extent(dim); ++i){
+			expanded[i] += this->dimslice(dim, i);
+		}
+
+		return expanded;
+	}
+
 
 	template<typename U = std::size_t>
 	Tensor<U> argmax(){
@@ -799,6 +809,31 @@ public:
 		return res;
 	}
 
+	void swap(Tensor<T>& other){
+		if(!same_extents(this->desc_, other.descritpor()))
+			throw std::runtime_error("inconsistent dimensions");
+
+		std::swap_ranges(this->data_.begin(), this->data_.end(), 
+				other.data_begin());
+	}
+
+	/*
+	Tensor<T> shuffle(const std::size_t dim){
+		std::random_device rd;
+		std::mt19937 g(rd());
+
+		std::size_t batch_size = this->size() / this->extent(dim);
+
+		for(long i = this->extent(dim); i > 0; --i){
+			std::uniform_int_distribution<std::size_t> dis(0, i);
+			std::size_t j = dis(g);
+			if(i != j){
+				for(std::size_t k = 0; k < batch_size; ++k){
+					std::swap(this->begin() + k + i,
+		}
+	}
+	*/
+
 	Tensor<T> cumsum(){
 		Tensor<T> res(*this);
 		
@@ -959,7 +994,6 @@ public:
 
 			res.set_node(n);
 		}
-
 		return res;
 	}
 
@@ -1180,10 +1214,10 @@ std::ostream& operator<<(std::ostream& os, const Tensor<T>& tensor) {
 		for(std::size_t i = 0; i < desc.extents[0]; ++i){
 			os << "{";
 			for(std::size_t j = 0; j < desc.extents[1] - 1; ++j){
-				os << *it << ", ";
+				os /*<< std::setprecision(2)*/ <<*it << ", ";
 				++it;
 			}
-			os << *it << "}";
+			os /*<< std::setprecision(2)*/ << *it << "}";
 			++it;
 			os << std::endl;
 		}
@@ -1999,6 +2033,7 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 
 	if(!same_extents(desc_, other.descriptor())){
 
+		/*
 		std::size_t this_exts_prod = std::accumulate(
 				this->desc_.extents.begin(),
 				this->desc_.extents.end(), 1, 
@@ -2009,6 +2044,10 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 		for(std::size_t i = 0; i < odesc.extents.size(); ++i){
 			other_exts_prod *= odesc.extents[i];
 		}
+		*/
+
+		std::size_t other_exts_prod = other.descriptor().size;
+		std::size_t this_exts_prod = this->desc_.size;
 
 		if(this_exts_prod % other_exts_prod == 0){
 			std::size_t extent = this_exts_prod / other_exts_prod;
@@ -2022,6 +2061,11 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 				this->dimslices_arange(extent_index, i, i)(
 						other.descriptor())
 					+= other;
+
+				/*
+				this->dimslices_arange(extent_index, i, i)
+					+= other;
+				*/
 			}
 
 			return *this;
@@ -2035,8 +2079,15 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 			}
 
 			auto temp = other;
-			for(std::size_t i = 0; i < extent; ++i)
-				*this += temp.dimslices_arange(extent_index,i,i);
+			for(std::size_t i = 0; i < extent; ++i){
+				auto tempst = temp.dimslices_arange(extent_index,i,i);
+
+
+				//(*this) += tempst;
+				(*this)(tempst.descriptor()) += tempst;
+					//temp.dimslices_arange(extent_index,i,i);
+				//*this += temp.dimslices_arange(extent_index,i,i);
+			}
 
 			return *this;
 		}
@@ -2106,10 +2157,19 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 	}
 	else{
 		auto j = other.begin();
+		auto i = this->begin();
+		for(std::size_t k = 0; k < this->size(); ++k){
+			*i += *j;
+			++i;
+			++j;
+		}
+
+		/*
 		for(auto i = begin(); i != end(); ++i){
 			*i += *j;
 			++j;
 		}
+		*/
 	}
 
 	return *this;

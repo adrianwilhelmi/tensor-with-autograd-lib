@@ -57,6 +57,8 @@ template<typename T>
 class FunctionCrossEntropy;
 template<typename T>
 class FunctionSum;
+template<typename T>
+class FunctionMean;
 
 template<typename T>
 using func_variant = std::variant<
@@ -79,7 +81,8 @@ using func_variant = std::variant<
 	FunctionConv2d<T>,
 	FunctionMaxPooling<T>,
 	FunctionCrossEntropy<T>,
-	FunctionSum<T>
+	FunctionSum<T>,
+	FunctionMean<T>
 >;
 
 template<typename T>

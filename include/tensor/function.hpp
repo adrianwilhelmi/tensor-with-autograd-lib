@@ -387,7 +387,16 @@ public:
 
 	void backward_impl(Tensor<T>& /*grad*/, node_vector<T>& inputs){
 		if(inputs[0]->data.requires_grad()){
+			/*
 			inputs[0]->grads += (inputs[0]->data.softmax() - inputs[1]->data);
+			*/
+
+
+			for(std::size_t i = 0; i < inputs[0]->data.extent(0);
+					++i){
+				inputs[0]->grads[i] += inputs[0]->data[i].softmax() - inputs[1]->data[i];
+			}
+
 			inputs[0]->backward();
 		}
 	}
@@ -427,6 +436,22 @@ public:
 		}
 	}
 };
+
+
+template<typename T>
+class FunctionMean : public Function<FunctionMean<T>, T>{
+public:
+	using Function<FunctionMean<T>, T>::Function;
+
+	void backward_impl(Tensor<T>& grad, node_vector<T>& inputs){
+		if(inputs[0]->data.requires_grad()){
+			const T N = (T)inputs[0]->data.size();
+			inputs[0]->grads += grad / N;
+			inputs[0]->backward();
+		}
+	}
+};
+
 
 namespace function{
 	template<typename T>

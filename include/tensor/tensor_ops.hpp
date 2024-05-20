@@ -490,6 +490,27 @@ namespace tensor{
 
 
 
+	template<typename T>
+	Tensor<T> mean(Tensor<T>& t){
+		Tensor<T> res = t.mean();
+		
+		if(t.requires_grad()){
+			res.enable_grad();
+			auto n = std::make_shared<Node<T>>(res);
+			func_variant<T> fn = FunctionMean<T>{};
+			n->grad_fn = fn;
+			n->set_inputs(t);
+
+			res.set_node(n);
+		}
+
+		return res;
+	}
+
+	template<typename T>
+	Tensor<T> mean(const Tensor<T>& t){
+		return t.mean();
+	}
 
 	template<typename T>
 	T dot(const Tensor<T>& t1, const Tensor<T>& t2){
@@ -838,18 +859,41 @@ namespace tensor{
 
 	template<typename T>
 	Tensor<T> cross_entropy(Tensor<T>& logits, Tensor<T>& targets){
-		if(logits.order() != 2 || targets.order() != 2)
-			throw std::invalid_argument("cross_entropy: must be a 2d tensor");
- 		if(logits.extent(0) != targets.extent(0) || logits.extent(1) != targets.extent(1)) 
-			throw std::invalid_argument("cross_entropy: inconsistent extents");
+		if(logits.order() != targets.order())
+			throw std::invalid_argument("cross_entropy: inconsistent orders");
+		
+		for(std::size_t i = 0; i < logits.order(); ++i){
+			if(logits.extent(i) != targets.extent(i))
+				throw std::invalid_argument("cross_entropy: inconsistent extents");
+		}
 
+
+		/*
 		constexpr T epsilon = 1e-8;
 		Tensor<T> t = logits.softmax();
 		t.clip_(epsilon, (T)1 - epsilon);
 		t.log_();
 		t *= targets;
-		
+
 		Tensor<T> res = -(t.sum() / logits.extent(0));
+		*/
+		
+
+		constexpr T epsilon = 1e-8;
+
+		std::size_t batch_size = logits.extent(0);
+
+		Tensor<T> res(batch_size);
+
+		for(std::size_t i = 0; i < batch_size; ++i){
+			Tensor<T> t = logits[i].softmax();
+			t.clip_(epsilon, (T)1 - epsilon);
+			t.log_();
+			t *= targets[i];
+
+			res[i] += -(t.sum() / batch_size);
+		}
+
 
 		if(logits.requires_grad()){
 			res.enable_grad();

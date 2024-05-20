@@ -22,49 +22,78 @@ int main(){
 	//Tensor<float> tr2 = tensor::random_normal(0.0, 1.0, 4000, 4000);
 
 
+	/*
+	const std::size_t input_size = 8;
+	const std::size_t hidden_size = 4;
+	const std::size_t num_classes = 2;
+
+	Tensor<float> X = tensor::random_normal<float>(
+			0, 0.01, 2, 8);
 
 
-	auto ri = tensor::randint(0, 10, 4, 4);
+	Tensor<float> Y = tensor::random_normal<float>(
+			0, 0.01, 2, 2);
 
-	Tensor<int> ri3(3,4,4);
+	Tensor<float> W1 = tensor::random_normal<float>(
+			0, 0.01, input_size, hidden_size);
+	Tensor<float> B1 = tensor::ones<float>(1, hidden_size);
+	Tensor<float> W2 = tensor::random_normal<float>(
+			0, 0.01, hidden_size, num_classes);
+	Tensor<float> B2 = tensor::ones<float>(1, num_classes);
 
-	ri3.row(0) += ri;
-	ri3.row(1) += ri;
-	ri3.row(2) += ri;
 
-	std::cout << ri << std::endl;
+	std::cout << W1 << std::endl;
+	std::cout << B1 << std::endl;
+	std::cout << W2 << std::endl;
+	std::cout << B2 << std::endl;
 
-	ri3 += ri.reshape(1,4,4);
+	std::cout << "X" << std::endl;
+	std::cout << X << std::endl;
+	std::cout << X.descriptor() << std::endl;
 
-	std::cout << ri3 << std::endl;
-
-	ri.view(1,4,4) += ri3;
-
-	std::cout << ri << std::endl;
+	std::cout << "Y" << std::endl;
+	std::cout << Y << std::endl;
+	std::cout << Y.descriptor() << std::endl;
 
 	
-	/*
-	auto ri = tensor::randint(0, 10, 1, 4);
 
-	Tensor<int> ri3(3,4);
+	auto hmm = tensor::matmul(X, W1);
+	auto hmmb = hmm + B1;
+	auto hidden = hmmb.relu();
 
-	ri3.row(0) += ri.view(4);
-	ri3.row(1) += ri.view(4);
-	ri3.row(2) += ri.view(4);
+	std::cout << hmm << std::endl;
+	std::cout << hmmb << std::endl;
+	std::cout << hidden << std::endl;
 
-	std::cout << ri << std::endl;
-	std::cout << ri3 << std::endl;
+	auto omm = tensor::matmul(hidden, W2);
+	auto ommb = omm + B2;
+	
+	std::cout << omm << std::endl;
 
-	ri3 += ri;
+	std::cout << B2 << std::endl;
+	std::cout << ommb << std::endl;
 
-	std::cout << ri3 << std::endl;
-
-	ri += ri3;
-
-	std::cout << ri << std::endl;
+	std::cout << B2.descriptor() << std::endl;
+	std::cout << ommb.descriptor() << std::endl;
 	*/
 
+	auto ri = tensor::randint(0, 10, 2, 4);
+	auto r2 = tensor::randint(0, 10, 1, 4);
 
+	std::cout << ri << std::endl;
+	std::cout << r2 << std::endl;
+
+	auto ra = ri + r2;
+	
+
+	std::cout << ra << std::endl;
+
+	/*
+	ri += r2;
+
+	std::cout << ri << std::endl;
+	std::cout << r2 << std::endl;
+	*/
 
 
 
