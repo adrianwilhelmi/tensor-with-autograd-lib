@@ -77,23 +77,16 @@ int main(){
 	std::cout << ommb.descriptor() << std::endl;
 	*/
 
-	auto ri = tensor::randint(0, 10, 2, 4);
-	auto r2 = tensor::randint(0, 10, 1, 4);
+	auto ri = tensor::randint(0, 10, 5, 2);
+	auto r2 = tensor::randint(0, 10, 5, 2);
 
 	std::cout << ri << std::endl;
-	std::cout << r2 << std::endl;
+	//std::cout << r2 << std::endl;
 
-	auto ra = ri + r2;
-	
-
-	std::cout << ra << std::endl;
-
-	/*
-	ri += r2;
+	ri.shuffle_();
 
 	std::cout << ri << std::endl;
-	std::cout << r2 << std::endl;
-	*/
+
 
 
 

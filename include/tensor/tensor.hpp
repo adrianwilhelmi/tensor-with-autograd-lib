@@ -810,29 +810,51 @@ public:
 	}
 
 	void swap(Tensor<T>& other){
-		if(!same_extents(this->desc_, other.descritpor()))
+		if(!same_extents(this->desc_, other.descriptor()))
 			throw std::runtime_error("inconsistent dimensions");
 
-		std::swap_ranges(this->data_.begin(), this->data_.end(), 
-				other.data_begin());
+		std::swap_ranges(this->begin(), this->end(), 
+				other.begin());
 	}
 
-	/*
-	Tensor<T> shuffle(const std::size_t dim){
+
+	void shuffle_(Tensor<T>& other, const std::size_t dim = 0){
+		if(this->extent(dim) != other.extent(dim))
+			throw std::runtime_error("shuffle_: inconsistent dims");
 		std::random_device rd;
 		std::mt19937 g(rd());
 
-		std::size_t batch_size = this->size() / this->extent(dim);
-
-		for(long i = this->extent(dim); i > 0; --i){
+		for(long i = this->extent(dim) - 1; i > 0; --i){
 			std::uniform_int_distribution<std::size_t> dis(0, i);
-			std::size_t j = dis(g);
+			long j = dis(g);
 			if(i != j){
-				for(std::size_t k = 0; k < batch_size; ++k){
-					std::swap(this->begin() + k + i,
+				auto tt1 = this->dimslice(dim, i);
+				auto tt2 = this->dimslice(dim, j);
+
+				auto ot1 = other.dimslice(dim, i);
+				auto ot2 = other.dimslice(dim, j);
+
+				tt1.swap(tt2);
+				ot1.swap(ot2);
+			}
 		}
 	}
-	*/
+
+
+	void shuffle_(const std::size_t dim = 0){
+		std::random_device rd;
+		std::mt19937 g(rd());
+
+		for(long i = this->extent(dim) - 1; i > 0; --i){
+			std::uniform_int_distribution<std::size_t> dis(0, i);
+			long j = dis(g);
+			if(i != j){
+				auto t1 = this->dimslice(dim, i);
+				auto t2 = this->dimslice(dim, j);
+				t1.swap(t2);
+			}
+		}
+	}
 
 	Tensor<T> cumsum(){
 		Tensor<T> res(*this);

@@ -72,13 +72,17 @@ int main(){
 	const std::string train_path = "./examples/dataset/mnist_train.csv";
 	const std::string test_path = "./examples/dataset/mnist_test.csv";
 
-	const std::size_t num_imgs = 60000;
+	const std::size_t num_imgs = 30000;
+
+	Tensor<Tensor<float>> dataset(num_imgs, 2);
 
 	auto [X, Y] = csv_to_tensors<float>(train_path, 
-							num_imgs);
+						num_imgs);
 	auto [X_test, Y_test] = csv_to_tensors<float>(test_path, 
 							num_imgs);
 
+	dataset(0, 0) = X;
+	dataset(0, 1) = Y;
 
 
 	//initialize net params
@@ -99,7 +103,7 @@ int main(){
 	W2.enable_grad();
 	B2.enable_grad();
 
-	const std::size_t num_epochs = 150;
+	const std::size_t num_epochs = 30;
 	float learning_rate = 0.01;
 
 
@@ -117,6 +121,7 @@ int main(){
 	for(std::size_t epoch = 0; epoch < num_epochs; ++epoch){
 		std::cout << "epoch: " << epoch <<  std::endl; 
 
+
 		start = std::chrono::high_resolution_clock::now();
 		
 		if(epoch == 120)
@@ -125,6 +130,7 @@ int main(){
 
 
 		for(std::size_t i = 0; i < num_batches; i += batch_size){
+			X.shuffle_(Y);
 
 			std::size_t start_index = tensor::randint(0,
 					num_imgs - batch_size - 1,
