@@ -167,9 +167,9 @@ public:
 	Enable_if<tensor_impl::Requesting_element<Args...>(), Tensor<const T>>
 	dimslices(std::size_t dim, Args... args) const;
 
-	Tensor<T> dimslices_arange(std::size_t dim, 
+	Tensor<T> dimslices_range(std::size_t dim, 
 			std::size_t from, std::size_t to);
-	Tensor<const T> dimslices_arange(std::size_t dim, 
+	Tensor<const T> dimslices_range(std::size_t dim, 
 			std::size_t from, std::size_t to) const;
 
 	template<typename... Args>
@@ -928,6 +928,12 @@ public:
 		return res;
 	}
 
+	Tensor<T> sqrt() const{
+		Tensor<T> res(*this);
+		res.apply([&](T&a) {a = std::sqrt(a);});
+		return res;
+	}
+
 	Tensor<T> log(){
 		Tensor<T> res(*this);
 		res.apply([&](T& a) {a = std::log(a);});
@@ -1053,6 +1059,7 @@ public:
 
 
 	//in-place
+	
 	Tensor<T>& pow_(Tensor<T>& exps){
 		assert(this->order() == exps.order());
 		assert(this->size() == exps.size());
@@ -1060,24 +1067,35 @@ public:
 			*i = std::pow(*i, *j);
 		return*this;
 	}
+
 	Tensor<T>& pow_(T exp){
 		return apply([&](T&a) {a = std::pow(a, exp);});
 	}
+
 	Tensor<T>& log_(){
 		return apply([&](T&a) {a = std::log(a);});
 	}
+
 	Tensor<T>& exp_(){
 		return apply([&](T&a) {a = std::exp(a);});
 	}
+
+	Tensor<T>& sqrt_(){
+		return apply([&](T&a) {a = std::sqrt(a);});
+	}
+
 	Tensor<T>& relu_(){
 		return apply([&](T& a) {a = tensor_impl::relu<T>(a);});
 	}
+
 	Tensor<T>& tanh_(){
 		return apply([&](T& a) {a = tensor_impl::tanh<T>(a);});
 	}
+
 	Tensor<T>& sigmoid_(){
 		return apply([&](T& a) {a = tensor_impl::sigmoid<T>(a);});
 	}
+
 	Tensor<T>& softmax_(){
 		T max = this->max();
 		this->apply([&](T&a) {a = std::exp(a - max);});
@@ -1224,6 +1242,7 @@ std::ostream& operator<<(std::ostream& os, const Tensor<T>& tensor) {
 
 	auto desc = tensor.descriptor();
 	auto it = tensor.begin();
+
 	if(tensor.order() == 1){
 		os << "{";
 		for(std::size_t i = 0; i < desc.extents[0] - 1; ++i){
@@ -1233,13 +1252,14 @@ std::ostream& operator<<(std::ostream& os, const Tensor<T>& tensor) {
 		os << *it << "}" << std::endl;
 	}
 	else if(tensor.order() == 2){
+
 		for(std::size_t i = 0; i < desc.extents[0]; ++i){
 			os << "{";
 			for(std::size_t j = 0; j < desc.extents[1] - 1; ++j){
-				os /*<< std::setprecision(2)*/ <<*it << ", ";
+				os << std::setprecision(2) <<*it << ", ";
 				++it;
 			}
-			os /*<< std::setprecision(2)*/ << *it << "}";
+			os << std::setprecision(2) << *it << "}";
 			++it;
 			os << std::endl;
 		}
@@ -1420,7 +1440,7 @@ Tensor<T>::dimslices(std::size_t dim, Args... args) const{
 }
 
 template<typename T>
-Tensor<T> Tensor<T>::dimslices_arange(std::size_t dim,
+Tensor<T> Tensor<T>::dimslices_range(std::size_t dim,
 		std::size_t from, std::size_t to){
 	assert(dim < order());
 	assert(from <= to);
@@ -1450,7 +1470,7 @@ Tensor<T> Tensor<T>::dimslices_arange(std::size_t dim,
 }
 
 template<typename T>
-Tensor<const T> Tensor<T>::dimslices_arange(std::size_t dim,
+Tensor<const T> Tensor<T>::dimslices_range(std::size_t dim,
 		std::size_t from, std::size_t to) const{
 	assert(dim < order());
 	assert(from <= to);
@@ -2054,8 +2074,7 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 		throw std::runtime_error("orders must match");
 
 	if(!same_extents(desc_, other.descriptor())){
-
-		/*
+/*
 		std::size_t this_exts_prod = std::accumulate(
 				this->desc_.extents.begin(),
 				this->desc_.extents.end(), 1, 
@@ -2080,14 +2099,10 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 			}
 
 			for(std::size_t i = 0; i < extent; ++i){
-				this->dimslices_arange(extent_index, i, i)(
+				this->dimslices_range(extent_index, i, i)(
 						other.descriptor())
 					+= other;
 
-				/*
-				this->dimslices_arange(extent_index, i, i)
-					+= other;
-				*/
 			}
 
 			return *this;
@@ -2102,13 +2117,9 @@ Enable_if<Tensor_type<M>(), Tensor<T>&> Tensor<T>::operator+=(const M&other){
 
 			auto temp = other;
 			for(std::size_t i = 0; i < extent; ++i){
-				auto tempst = temp.dimslices_arange(extent_index,i,i);
+				auto tempst = temp.dimslices_range(extent_index,i,i);
 
-
-				//(*this) += tempst;
 				(*this)(tempst.descriptor()) += tempst;
-					//temp.dimslices_arange(extent_index,i,i);
-				//*this += temp.dimslices_arange(extent_index,i,i);
 			}
 
 			return *this;

@@ -726,9 +726,9 @@ namespace tensor{
 			for(std::size_t i = 0; i < out_height; ++i){
 				for(std::size_t j = 0; j < out_width; ++j){
 					auto submat = input.dimslice(0, c).
-							dimslices_arange(0, i * stride, 
+							dimslices_range(0, i * stride, 
 								i * stride + kernel_size - 1).
-							dimslices_arange(1, j * stride,
+							dimslices_range(1, j * stride,
 								j * stride + kernel_size - 1);
 
 					res(c,i,j) = submat.max();
@@ -768,9 +768,9 @@ namespace tensor{
 			for(std::size_t i = 0; i < out_height; ++i){
 				for(std::size_t j = 0; j < out_width; ++j){
 					auto submat = input.dimslice(0, c).
-							dimslices_arange(0, i * stride, 
+							dimslices_range(0, i * stride, 
 								i * stride + kernel_size - 1).
-							dimslices_arange(1, j * stride,
+							dimslices_range(1, j * stride,
 								j * stride + kernel_size - 1);
 
 					res(c,i,j) = submat.max();
@@ -800,9 +800,9 @@ namespace tensor{
 			for(std::size_t i = 0; i < out_height; ++i){
 				for(std::size_t j = 0; j < out_width; ++j){
 					auto submat = input.dimslice(0, c).
-							dimslices_arange(0, i * stride, 
+							dimslices_range(0, i * stride, 
 								i * stride + kernel_size - 1).
-							dimslices_arange(1, j * stride,
+							dimslices_range(1, j * stride,
 								j * stride + kernel_size - 1);
 
 					res(c,i,j) = submat.sum();
@@ -843,9 +843,9 @@ namespace tensor{
 			for(std::size_t i = 0; i < out_height; ++i){
 				for(std::size_t j = 0; j < out_width; ++j){
 					auto submat = input.dimslice(0, c).
-							dimslices_arange(0, i * stride, 
+							dimslices_range(0, i * stride, 
 								i * stride + kernel_size - 1).
-							dimslices_arange(1, j * stride,
+							dimslices_range(1, j * stride,
 								j * stride + kernel_size - 1);
 
 					res(c,i,j) = submat.sum();
