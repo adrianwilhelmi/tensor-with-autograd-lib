@@ -60,7 +60,7 @@ Tensor<T> forward(
 		){
 	Tensor<T> hmm = tensor::matmul(X, W1);
 	Tensor<T> hmmb = hmm + B1;
-	Tensor<T> hidden = hmmb.relu();
+	Tensor<T> hidden = hmmb.tanh();
 
 	Tensor<T> omm = tensor::matmul(hidden, W2);
 	return omm + B2;
@@ -133,9 +133,9 @@ int main(){
 	Tensor<float> mB2 = tensor::zeros<float>(B2.descriptor()); 
 	Tensor<float> vB2 = tensor::zeros<float>(B2.descriptor());
 
-	float learning_rate = 0.001;
-	//float beta1 = 0.9;
-	//float beta2 = 0.999;
+	float learning_rate = 0.0005;
+	//float beta1 = 0.65;
+	//float beta2 = 0.95;
 
 	float beta1 = 0.7;
 	float beta2 = 0.9;
@@ -153,8 +153,8 @@ int main(){
 	W2.enable_grad();
 	B2.enable_grad();
 
-	const std::size_t num_epochs = 500;
-	const std::size_t batch_size = 32;
+	const std::size_t num_epochs = 2000;
+	const std::size_t batch_size = 24;
 
 	float lr_update = 100 * learning_rate / num_epochs;
 
@@ -166,14 +166,6 @@ int main(){
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 
 	for(std::size_t epoch = 0; epoch < num_epochs; ++epoch){
-
-
-
-		/*
-		if(epoch == 10)
-			learning_rate /= 10.0;
-		*/
-
 
 		std::size_t start_index = tensor::randint(0,
 				num_imgs - batch_size - 1,
@@ -209,12 +201,7 @@ int main(){
 		loss.backward();
 		std::cout << "loss: " << loss;
 
-		/*
-		W2 -= learning_rate * W2.grad();
-		B2 -= learning_rate * B2.grad();
-		W1 -= learning_rate * W1.grad();
-		B1 -= learning_rate * B1.grad();
-		*/
+
 
 		t++; 
 
@@ -263,7 +250,8 @@ int main(){
 	
 	std::size_t success = 0;
 
-	std::size_t num_test_imgs = num_imgs / 10;
+	//std::size_t num_test_imgs = num_imgs / 10;
+	std::size_t num_test_imgs = 1000;
 
 	for(std::size_t i = 0; i < num_test_imgs; ++i){
 		if(i % 500 == 0) std::cout << "test img: " << i << std::endl;
