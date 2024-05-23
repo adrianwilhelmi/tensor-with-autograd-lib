@@ -7,12 +7,12 @@ else
     installation_path=$P
 fi
 
-header_path="$installation_path/include"
+header_path="$installation_path/tensor"
 
 mkdir -p "$header_path"
 
 echo "Copying header files"
-sudo cp -r include/tensor "$header_path"
-sudo cp include/tensor_lib.hpp "$header_path"
+sudo cp -r tensor/tensor_lib "$header_path"
+sudo cp tensor/tensor_lib.hpp "$header_path"
 
 echo "Header-only library installed successfully to $installation_path"
