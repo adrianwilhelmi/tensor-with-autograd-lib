@@ -23,7 +23,7 @@ PyTorch-like lightweight header-only tensor library with autograd system written
 * `make`
 * OpenCV library (loading images and videos into tensors)
 
-Executing `scripts/install_env.sh` script will detect your Linux distribution and install required software. You can run `make install environment` if you have at least make installed on your system. To run tests and all analyzers you will also need `valgrind` and `G-Test`, but they are not essential for the library so i didn't include them in the installation script.
+Executing `scripts/install_env.sh` script will detect your Linux distribution and install required software (clang, make, opencv). You can run `make install environment` if you have at least make installed on your system. To run tests and all analyzers you will also need `valgrind` and `GTest`, but they are not essential for the library so i didn't include them in the installation script.
 
 ## Installation, compilation and usage
 
