@@ -1,7 +1,7 @@
 # Tensor with Autograd Library
 ## Overview
-PyTorch-like lightweight header-only tensor library with autograd system written in c++. It implements two main components:
-1. **Tensor Object**: A versatile n-dimensional array structure supporting a variety of mathematical operations.
+PyTorch-like lightweight header-only tensor library with autograd system written in C++. It implements two main components:
+1. **Tensor Object**: A versatile n-dimensional array structure supporting a variety of operations.
 2. **Autograd System**: An automatic differentiation system to facilitate gradient-based machine learning algorithms.
 
 ## Functionalities
