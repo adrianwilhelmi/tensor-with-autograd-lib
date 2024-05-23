@@ -56,6 +56,9 @@ atest: $(TEST_OBJ)
 	@valgrind --leak-check=full ./$(TEST_EXEC)
 	@make clean
 
+install:
+	@chmod +x scripts/install_lib.sh
+	@scripts/install_lib.sh
 
 %.o: %.cpp
 	@$(CXX) $(CXXFLAGS) -c $< -o $@

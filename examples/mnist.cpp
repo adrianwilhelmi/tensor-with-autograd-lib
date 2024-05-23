@@ -133,7 +133,7 @@ int main(){
 	Tensor<float> mB2 = tensor::zeros<float>(B2.descriptor()); 
 	Tensor<float> vB2 = tensor::zeros<float>(B2.descriptor());
 
-	float learning_rate = 0.0005;
+	float learning_rate = 0.001;
 	//float beta1 = 0.65;
 	//float beta2 = 0.95;
 
@@ -153,7 +153,7 @@ int main(){
 	W2.enable_grad();
 	B2.enable_grad();
 
-	const std::size_t num_epochs = 2000;
+	const std::size_t num_epochs = 500;
 	const std::size_t batch_size = 24;
 
 	float lr_update = 100 * learning_rate / num_epochs;
