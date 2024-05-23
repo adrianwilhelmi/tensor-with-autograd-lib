@@ -60,6 +60,10 @@ install:
 	@chmod +x scripts/install_lib.sh
 	@scripts/install_lib.sh
 
+install environment:
+	@chmod +x scripts/install_env.sh
+	@scripts/install_env.sh
+
 %.o: %.cpp
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
